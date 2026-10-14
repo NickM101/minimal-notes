@@ -1,0 +1,31 @@
+{
+  "id": "4d919221-f33b-48a1-b103-c1104fad94ab",
+  "title": "New way to think",
+  "body": "My plan for today:\n\nTake notes in a variety of formats including text, photos, voice recordings and more.\nFocus on what matters most and eliminate unnecessary clutter.",
+  "checklist": [
+    {
+      "id": "chk-21",
+      "text": "Call mom",
+      "checked": false
+    },
+    {
+      "id": "chk-22",
+      "text": "Book flight to Morocco",
+      "checked": true
+    },
+    {
+      "id": "chk-23",
+      "text": "Preview wireframe, send feedback to designer",
+      "checked": true
+    },
+    {
+      "id": "chk-24",
+      "text": "Make dinner reservation",
+      "checked": true
+    }
+  ],
+  "images": [],
+  "voice": null,
+  "created_at": "2026-10-14T18:59:21.083436700+03:00",
+  "updated_at": "2026-10-14T18:59:21.083436700+03:00"
+}

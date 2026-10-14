@@ -1,0 +1,36 @@
+{
+  "id": "759adae7-575a-4184-be9b-1f924c36218e",
+  "title": "Minimalism",
+  "body": "First I admit that I am not a web designer, but a design lover.\n\nMinimalism refers to a certain style and applies in many fields: Art, architecture, literature, and philosophy as a ==way of life==.\n\n> [!NOTE] Zen is not the lack of clutter; it is the deliberate presence of purpose.\n\n## Core Principles\n- [x] Strip work down to its most **fundamental features**\n- [x] Embrace deliberate whitespace and calm typography\n- [ ] Focus on tactile, physical book aesthetic\n- [ ] Practice daily reflection and minimal journaling\n\n> Simplicity is the ultimate sophistication.\n\n```rust\nfn zen_state() -> &'static str {\n    \"Serenity in simplicity\"\n}\n```\n\nAre you a designer who hides behind ornament, or one who crafts `essential harmony`?",
+  "checklist": [
+    {
+      "id": "chk-1",
+      "text": "I have read about that topic.",
+      "checked": false
+    },
+    {
+      "id": "chk-2",
+      "text": "I have read about that topic.",
+      "checked": true
+    },
+    {
+      "id": "chk-3",
+      "text": "I have read about that topic.",
+      "checked": true
+    },
+    {
+      "id": "chk-4",
+      "text": "I have read about that topic.",
+      "checked": false
+    }
+  ],
+  "images": [],
+  "voice": {
+    "id": "rec-1",
+    "duration_seconds": 64,
+    "current_seconds": 18,
+    "is_playing": false
+  },
+  "created_at": "2026-10-14T18:59:21.080818900+03:00",
+  "updated_at": "2026-10-14T18:59:21.080818900+03:00"
+}
