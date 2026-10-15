@@ -1,6 +1,6 @@
 use gpui_kit::base::StyledExt;
 use gpui_kit::*;
-use gpui_kit::component::{button::{Button, ButtonVariants}, Icon, IconName};
+use gpui_kit::component::{button::{Button, ButtonVariants}, IconName};
 use crate::theme::CurrentScreen;
 use crate::NotesApp;
 
@@ -27,7 +27,6 @@ impl NotesApp {
                         div()
                             .flex()
                             .items_center()
-                            .gap_3()
                             // Dark / Light Mode Toggle Button
                             .child(
                                 Button::new("btn-home-theme-toggle")
@@ -45,21 +44,10 @@ impl NotesApp {
                                     .on_click(cx.listener(|this, _, _, cx| {
                                         this.toggle_theme(cx);
                                     })),
-                            )
-                            // Search Button
-                            .child(
-                                Button::new("btn-home-search")
-                                    .icon(IconName::Search)
-                                    .ghost()
-                                    .tooltip("Browse & Search Notes")
-                                    .on_click(cx.listener(|this, _, _, cx| {
-                                        this.current_screen = CurrentScreen::Browse;
-                                        cx.notify();
-                                    })),
                             ),
                     ),
             )
-            // Center Area: Balanced composition with breathing room
+            // Center Area: Hanging Zen Lamp & New Note Button
             .child(
                 div()
                     .flex()
@@ -77,16 +65,14 @@ impl NotesApp {
                             .justify_center()
                             .child(self.render_zen_lamp(&t)),
                     )
-                    // Balanced Action Group at the lower third
+                    // Boxed [ New Note ] Button centered in lower third
                     .child(
                         div()
                             .flex()
                             .flex_col()
                             .items_center()
                             .justify_center()
-                            .gap_4()
                             .child(
-                                // Boxed [ New Note ] Button
                                 div()
                                     .id("btn-cover-new-note")
                                     .cursor_pointer()
@@ -105,37 +91,33 @@ impl NotesApp {
                                         this.create_new_note(window, cx);
                                     }))
                                     .child("New Note"),
-                            )
-                            .child(
-                                div()
-                                    .id("btn-cover-browse-notes")
-                                    .cursor_pointer()
-                                    .flex()
-                                    .items_center()
-                                    .gap_1p5()
-                                    .px_4()
-                                    .py_1p5()
-                                    .rounded_full()
-                                    .text_xs()
-                                    .font_medium()
-                                    .text_color(t.ink_muted)
-                                    .hover(move |s| s.text_color(t.ink).bg(t.bg_hover))
-                                    .on_click(cx.listener(|this, _, _, cx| {
-                                        this.current_screen = CurrentScreen::Browse;
-                                        cx.notify();
-                                    }))
-                                    .child(Icon::new(IconName::Search).size_3p5())
-                                    .child("Browse Notes"),
                             ),
                     ),
             )
 
-            // Bottom Right Sign In / Profile docked at the very bottom right
+            // Bottom Bar: Browse Notes docked at bottom left, Sign In / Profile docked at bottom right
             .child(
                 div()
-                    .absolute()
-                    .right(px(32.0))
-                    .bottom(px(32.0))
+                    .flex()
+                    .items_center()
+                    .justify_between()
+                    .w_full()
+                    .px_8()
+                    .pb_8()
+                    .child(
+                        div()
+                            .id("btn-cover-browse-notes")
+                            .cursor_pointer()
+                            .text_sm()
+                            .font_bold()
+                            .text_color(t.ink)
+                            .hover(|s| s.underline())
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                this.current_screen = CurrentScreen::Browse;
+                                cx.notify();
+                            }))
+                            .child("Browse Notes"),
+                    )
                     .child(self.render_avatar_button(&t, cx)),
             )
 

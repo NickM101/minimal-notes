@@ -56,16 +56,29 @@ impl Note {
     }
 
     pub fn snippet(&self) -> String {
+        self.snippet_max(200)
+    }
+
+    pub fn snippet_max(&self, max_chars: usize) -> String {
         let trimmed = self.body.trim();
         if trimmed.is_empty() {
             "No additional text".to_string()
         } else {
-            let first_line = trimmed.lines().next().unwrap_or("");
-            if first_line.chars().count() > 60 {
-                let s: String = first_line.chars().take(57).collect();
-                format!("{}...", s)
+            // Filter markdown markers and join lines with space for smooth wrapping
+            let clean_lines: Vec<&str> = trimmed
+                .lines()
+                .map(|l| l.trim())
+                .filter(|l| !l.is_empty() && !l.starts_with("```"))
+                .map(|l| l.trim_start_matches('#').trim_start_matches('>').trim())
+                .filter(|l| !l.is_empty())
+                .collect();
+
+            let joined = clean_lines.join(" ");
+            if joined.chars().count() > max_chars {
+                let s: String = joined.chars().take(max_chars.saturating_sub(3)).collect();
+                format!("{}...", s.trim_end())
             } else {
-                first_line.to_string()
+                joined
             }
         }
     }

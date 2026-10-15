@@ -119,6 +119,54 @@ impl Storage {
             );
             let _ = self.save(&note4);
             notes.push(note4);
+
+            let mut note5 = Note::new(
+                "The Art of Quiet Software",
+                "In an era characterized by relentless notifications, aggressive engagement metrics, and visual noise, quiet software represents a conscious return to intentional computing.\n\n\
+                 ## Why Simplicity Endures\n\n\
+                 The tools we choose to write with inevitably shape the thoughts we produce. When an application bombards you with flashing badges, excessive telemetry, and over-engineered toolbars, cognitive bandwidth is quietly drained before you even pen the first sentence.\n\n\
+                 > \"Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away.\"\n\
+                 > — Antoine de Saint-Exupéry\n\n\
+                 ### The Three Pillars of Calm Interfaces\n\n\
+                 1. **Zero Distraction Canvas**: The screen exists solely to elevate your words. Typography, line spacing, and margin proportions should evoke the quiet dignity of a well-typeset book.\n\
+                 2. **Tactile Responsiveness**: Every interaction—a keypress, a checkbox click, or an icon hover—should feel purposeful and instant, devoid of sluggish network round-trips.\n\
+                 3. **Local Sovereignty**: Your ideas belong on your machine. Simple plain-text and structured JSON formats outlive cloud platforms and subscription models.\n\n\
+                 ```rust\n\
+                 pub fn compose(thought: Thought) -> Clarity {\n\
+                     thought.strip_distractions().crystallize()\n\
+                 }\n\
+                 ```\n\n\
+                 When we build tools with respect for human attention, we make space for deep thinking, reflection, and lasting craft.",
+            );
+            note5.checklist = vec![
+                ChecklistItem {
+                    id: "chk-51".into(),
+                    text: "Draft opening philosophy and motivation".into(),
+                    checked: true,
+                },
+                ChecklistItem {
+                    id: "chk-52".into(),
+                    text: "Outline the three pillars of calm interfaces".into(),
+                    checked: true,
+                },
+                ChecklistItem {
+                    id: "chk-53".into(),
+                    text: "Add code snippet and architectural reflection".into(),
+                    checked: true,
+                },
+                ChecklistItem {
+                    id: "chk-54".into(),
+                    text: "Review typesetting and paragraph cadence".into(),
+                    checked: false,
+                },
+                ChecklistItem {
+                    id: "chk-55".into(),
+                    text: "Publish article to personal essay archive".into(),
+                    checked: false,
+                },
+            ];
+            let _ = self.save(&note5);
+            notes.push(note5);
         }
 
         notes

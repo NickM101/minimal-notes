@@ -46,14 +46,29 @@ impl NotesApp {
                     .border_b_1()
                     .border_color(t.ink_faint)
                     .child(
-                        Button::new("btn-browse-back")
-                            .icon(IconName::ChevronLeft)
-                            .ghost()
-                            .tooltip("Home")
+                        div()
+                            .id("btn-browse-back")
+                            .cursor_pointer()
+                            .flex()
+                            .items_center()
+                            .gap_1p5()
+                            .px_2p5()
+                            .py_1p5()
+                            .rounded_md()
+                            .text_color(t.ink_muted)
+                            .hover(move |s| s.text_color(t.ink).bg(t.bg_hover))
+                            .active(move |s| s.bg(t.bg_active))
                             .on_click(cx.listener(|this, _, _, cx| {
                                 this.current_screen = CurrentScreen::Home;
                                 cx.notify();
-                            })),
+                            }))
+                            .child(Icon::new(IconName::ChevronLeft).size_4())
+                            .child(
+                                div()
+                                    .text_sm()
+                                    .font_medium()
+                                    .child("Back to Home"),
+                            ),
                     )
                     .child(
                         div()
@@ -208,142 +223,8 @@ impl NotesApp {
                                         .flex()
                                         .flex_col()
                                         .pb_4()
-                                        .children(filtered_notes.into_iter().map(|note| {
-                                            let note_id = note.id.clone();
-                                            let note_id_view = note.id.clone();
-                                            let note_id_edit = note.id.clone();
-                                            let note_id_del = note.id.clone();
-                                            let title = note.display_title().to_string();
-                                            let date = note.formatted_date();
-                                            let is_active = self.selected_id.as_deref() == Some(&note_id);
-
-                                            div()
-                                                .id(SharedString::from(format!("browse-item-{}", note_id)))
-                                                .group("browse-row")
-                                                .flex()
-                                                .items_center()
-                                                .justify_between()
-                                                .px_6()
-                                                .py_3p5()
-                                                .border_b_1()
-                                                .border_color(t.ink_faint)
-                                                .bg(if is_active { t.surface } else { t.bg })
-                                                .cursor_pointer()
-                                                .hover(move |s| s.bg(t.bg_hover))
-                                                .active(move |s| s.bg(t.bg_active))
-                                                .on_click(cx.listener(move |this, _, window, cx| {
-                                                    this.open_note(&note_id, window, cx);
-                                                }))
-                                                .child(
-                                                    div()
-                                                        .flex()
-                                                        .flex_1()
-                                                        .min_w_0()
-                                                        .flex_col()
-                                                        .gap_1()
-                                                        .child(
-                                                            div()
-                                                                .flex()
-                                                                .items_center()
-                                                                .gap_2()
-                                                                .child(
-                                                                    div()
-                                                                        .text_sm()
-                                                                        .font_bold()
-                                                                        .text_color(t.ink)
-                                                                        .overflow_hidden()
-                                                                        .text_ellipsis()
-                                                                        .child(title),
-                                                                )
-                                                                .when(is_active, |this| {
-                                                                    this.child(
-                                                                        div()
-                                                                            .text_xs()
-                                                                            .px_1p5()
-                                                                            .py_0p5()
-                                                                            .rounded_sm()
-                                                                            .bg(t.ink)
-                                                                            .text_color(t.bg)
-                                                                            .font_medium()
-                                                                            .child("Active"),
-                                                                    )
-                                                                }),
-                                                        )
-                                                        .child(
-                                                            div()
-                                                                .text_xs()
-                                                                .text_color(t.ink_muted)
-                                                                .overflow_hidden()
-                                                                .text_ellipsis()
-                                                                .child(note.snippet()),
-                                                        ),
-                                                )
-                                                .child(
-                                                    div()
-                                                        .flex()
-                                                        .items_center()
-                                                        .gap_3()
-                                                        .when(!note.checklist.is_empty(), |this| {
-                                                            let done = note.checklist.iter().filter(|i| i.checked).count();
-                                                            let total = note.checklist.len();
-                                                            this.child(
-                                                                div()
-                                                                    .text_xs()
-                                                                    .px_1p5()
-                                                                    .py_0p5()
-                                                                    .rounded_sm()
-                                                                    .border_1()
-                                                                    .border_color(t.ink_faint)
-                                                                    .text_color(t.ink_muted)
-                                                                    .child(format!("{}/{}", done, total)),
-                                                            )
-                                                        })
-                                                        .child(
-                                                            div()
-                                                                .text_xs()
-                                                                .text_color(t.ink_muted)
-                                                                .child(date),
-                                                        )
-                                                        // Note Actions: Eye (View), Pencil (Edit), Trash (Delete)
-                                                        .child(
-                                                            div()
-                                                                .id(SharedString::from(format!("browse-actions-{}", note_id_del)))
-                                                                .flex()
-                                                                .items_center()
-                                                                .gap_1()
-                                                                .child(
-                                                                    Button::new(SharedString::from(format!("btn-browse-view-{}", note_id_view)))
-                                                                        .icon(IconName::Eye)
-                                                                        .ghost()
-                                                                        .small()
-                                                                        .tooltip("View Note")
-                                                                        .on_click(cx.listener(move |this, _, window, cx| {
-                                                                            this.open_note(&note_id_view, window, cx);
-                                                                        })),
-                                                                )
-                                                                .child(
-                                                                    Button::new(SharedString::from(format!("btn-browse-edit-{}", note_id_edit)))
-                                                                        .icon(FullIconName::Pencil)
-                                                                        .ghost()
-                                                                        .small()
-                                                                        .tooltip("Edit Note")
-                                                                        .on_click(cx.listener(move |this, _, window, cx| {
-                                                                            this.open_note(&note_id_edit, window, cx);
-                                                                        })),
-                                                                )
-                                                                .child(
-                                                                    Button::new(SharedString::from(format!("btn-browse-del-{}", note_id_del)))
-                                                                        .icon(FullIconName::Trash)
-                                                                        .ghost()
-                                                                        .small()
-                                                                        .tooltip("Delete Note")
-                                                                        .on_click(cx.listener(move |this, _, _, cx| {
-                                                                            this.note_to_delete = Some(note_id_del.clone());
-                                                                            cx.notify();
-                                                                        })),
-                                                                ),
-                                                        ),
-                                                )
+                                        .children(filtered_notes.iter().map(|note| {
+                                            self.render_note_list_item(note, &t, cx)
                                         })),
                                 )
                             }
@@ -356,161 +237,9 @@ impl NotesApp {
                                         .flex_wrap()
                                         .gap_4()
                                         .p_6()
-                                        .pb_8()
-                                        .children(filtered_notes.into_iter().map(|note| {
-                                            let note_id = note.id.clone();
-                                            let note_id_view = note.id.clone();
-                                            let note_id_edit = note.id.clone();
-                                            let note_id_del = note.id.clone();
-                                            let title = note.display_title().to_string();
-                                            let date = note.formatted_date();
-                                            let is_active = self.selected_id.as_deref() == Some(&note_id);
-                                            let snippet = note.snippet();
-                                            let has_checklist = !note.checklist.is_empty();
-                                            let checklist_summary = if has_checklist {
-                                                let done = note.checklist.iter().filter(|i| i.checked).count();
-                                                let total = note.checklist.len();
-                                                Some(format!("{}/{}", done, total))
-                                            } else {
-                                                None
-                                            };
-
-                                            div()
-                                                .id(SharedString::from(format!("browse-grid-card-{}", note_id)))
-                                                .w(px(240.0))
-                                                .h(px(160.0))
-                                                .flex()
-                                                .flex_col()
-                                                .justify_between()
-                                                .p_4()
-                                                .rounded_lg()
-                                                .border_1()
-                                                .border_color(if is_active { t.ink } else { t.ink_faint })
-                                                .bg(if is_active { t.surface } else { t.bg })
-                                                .cursor_pointer()
-                                                .hover(move |s| s.bg(t.bg_hover).border_color(t.ink_muted))
-                                                .active(move |s| s.bg(t.bg_active))
-                                                .on_click(cx.listener(move |this, _, window, cx| {
-                                                    this.open_note(&note_id, window, cx);
-                                                }))
-                                                // Card top content
-                                                .child(
-                                                    div()
-                                                        .flex()
-                                                        .flex_col()
-                                                        .gap_1p5()
-                                                        .child(
-                                                            div()
-                                                                .flex()
-                                                                .items_center()
-                                                                .justify_between()
-                                                                .gap_2()
-                                                                .child(
-                                                                    div()
-                                                                        .text_sm()
-                                                                        .font_bold()
-                                                                        .text_color(t.ink)
-                                                                        .overflow_hidden()
-                                                                        .text_ellipsis()
-                                                                        .child(title),
-                                                                )
-                                                                .when(is_active, |this| {
-                                                                    this.child(
-                                                                        div()
-                                                                            .text_xs()
-                                                                            .px_1p5()
-                                                                            .py_0p5()
-                                                                            .rounded_sm()
-                                                                            .bg(t.ink)
-                                                                            .text_color(t.bg)
-                                                                            .font_medium()
-                                                                            .child("Active"),
-                                                                    )
-                                                                }),
-                                                        )
-                                                        .child(
-                                                            div()
-                                                                .text_xs()
-                                                                .text_color(t.ink_muted)
-                                                                .h(px(40.0))
-                                                                .overflow_hidden()
-                                                                .text_ellipsis()
-                                                                .child(snippet),
-                                                        ),
-                                                )
-                                                // Card bottom meta & action dock
-                                                .child(
-                                                    div()
-                                                        .flex()
-                                                        .items_center()
-                                                        .justify_between()
-                                                        .pt_2()
-                                                        .border_t_1()
-                                                        .border_color(t.ink_faint)
-                                                        .child(
-                                                            div()
-                                                                .flex()
-                                                                .items_center()
-                                                                .gap_2()
-                                                                .child(
-                                                                    div()
-                                                                        .text_xs()
-                                                                        .text_color(t.ink_muted)
-                                                                        .child(date),
-                                                                )
-                                                                .when_some(checklist_summary, |this, sum| {
-                                                                    this.child(
-                                                                        div()
-                                                                            .text_xs()
-                                                                            .px_1p5()
-                                                                            .py_0p5()
-                                                                            .rounded_sm()
-                                                                            .border_1()
-                                                                            .border_color(t.ink_faint)
-                                                                            .text_color(t.ink_muted)
-                                                                            .child(sum),
-                                                                    )
-                                                                }),
-                                                        )
-                                                        .child(
-                                                            div()
-                                                                .id(SharedString::from(format!("browse-grid-actions-{}", note_id_del)))
-                                                                .flex()
-                                                                .items_center()
-                                                                .gap_0p5()
-                                                                .child(
-                                                                    Button::new(SharedString::from(format!("btn-grid-view-{}", note_id_view)))
-                                                                        .icon(IconName::Eye)
-                                                                        .ghost()
-                                                                        .small()
-                                                                        .tooltip("View Note")
-                                                                        .on_click(cx.listener(move |this, _, window, cx| {
-                                                                            this.open_note(&note_id_view, window, cx);
-                                                                        })),
-                                                                )
-                                                                .child(
-                                                                    Button::new(SharedString::from(format!("btn-grid-edit-{}", note_id_edit)))
-                                                                        .icon(FullIconName::Pencil)
-                                                                        .ghost()
-                                                                        .small()
-                                                                        .tooltip("Edit Note")
-                                                                        .on_click(cx.listener(move |this, _, window, cx| {
-                                                                            this.open_note(&note_id_edit, window, cx);
-                                                                        })),
-                                                                )
-                                                                .child(
-                                                                    Button::new(SharedString::from(format!("btn-grid-del-{}", note_id_del)))
-                                                                        .icon(FullIconName::Trash)
-                                                                        .ghost()
-                                                                        .small()
-                                                                        .tooltip("Delete Note")
-                                                                        .on_click(cx.listener(move |this, _, _, cx| {
-                                                                            this.note_to_delete = Some(note_id_del.clone());
-                                                                            cx.notify();
-                                                                        })),
-                                                                ),
-                                                        ),
-                                                )
+                                        .pb_16()
+                                        .children(filtered_notes.iter().map(|note| {
+                                            self.render_note_card(note, &t, cx)
                                         })),
                                 )
                             }

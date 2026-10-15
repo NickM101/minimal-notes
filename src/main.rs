@@ -168,7 +168,7 @@ impl NotesApp {
             selected_id,
             search_query: String::new(),
             current_screen: CurrentScreen::Home,
-            browse_layout: BrowseLayout::List,
+            browse_layout: BrowseLayout::Grid,
             browse_search_open: false,
             is_syncing: false,
             show_add_modal: false,
@@ -288,6 +288,7 @@ fn main() {
                 size(px(1100.0), px(700.0)),
                 cx,
             )));
+            window_options.window_min_size = Some(size(px(720.0), px(500.0)));
             window_options.focus = true;
             window_options.show = true;
 
