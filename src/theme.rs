@@ -30,6 +30,7 @@ pub enum CurrentScreen {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum EditorModeView {
     Visual, // Notion-style WYSIWYG Live Preview mode
     Source, // Styled source-code Editor with syntax highlighting & line numbers

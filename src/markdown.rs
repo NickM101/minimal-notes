@@ -69,6 +69,7 @@ pub fn parse_inline_tokens<'a>(mut text: &'a str) -> Vec<InlineTok<'a>> {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum MarkdownBlock {
     Heading(usize, String),
     Checklist {
@@ -80,7 +81,6 @@ pub enum MarkdownBlock {
     Numbered(String, String),
     Quote(String),
     Callout {
-        #[allow(dead_code)]
         kind: String,
         text: String,
     },

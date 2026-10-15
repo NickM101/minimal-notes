@@ -13,10 +13,11 @@ impl NotesApp {
                 s.set_value(&note.title, window, cx);
             });
             self.editor_state.update(cx, |s, cx| {
-                s.set_value(&note.body, window, cx);
+                s.set_value(&note.plain_text(), window, cx);
             });
             self.is_syncing = false;
         }
+        self.sync_block_inputs(window, cx);
         self.current_screen = CurrentScreen::Editor;
         cx.notify();
     }
@@ -36,6 +37,7 @@ impl NotesApp {
             s.set_value("", window, cx);
         });
         self.is_syncing = false;
+        self.sync_block_inputs(window, cx);
         self.current_screen = CurrentScreen::Editor;
         cx.notify();
     }

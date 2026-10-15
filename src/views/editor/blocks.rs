@@ -9,6 +9,7 @@ use crate::views::editor::inline::render_inline_spans;
 use crate::NotesApp;
 
 impl NotesApp {
+    #[allow(dead_code)]
     pub(crate) fn render_notion_blocks(
         &self,
         content: &str,

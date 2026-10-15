@@ -18,8 +18,20 @@ impl NotesApp {
         let date = note.formatted_date();
         let is_active = self.selected_id.as_deref() == Some(&note_id);
         let snippet = note.snippet();
-        let has_checklist = !note.checklist.is_empty();
-        let checklist_summary = if has_checklist {
+        let todo_blocks: Vec<_> = note
+            .blocks
+            .iter()
+            .filter_map(|b| match &b.kind {
+                crate::models::BlockKind::Todo { checked, .. } => Some(*checked),
+                _ => None,
+            })
+            .collect();
+        let _has_checklist = !todo_blocks.is_empty() || !note.checklist.is_empty();
+        let checklist_summary = if !todo_blocks.is_empty() {
+            let done = todo_blocks.iter().filter(|&&c| c).count();
+            let total = todo_blocks.len();
+            Some(format!("{}/{}", done, total))
+        } else if !note.checklist.is_empty() {
             let done = note.checklist.iter().filter(|i| i.checked).count();
             let total = note.checklist.len();
             Some(format!("{}/{}", done, total))
@@ -156,6 +168,15 @@ impl NotesApp {
         let title = note.display_title().to_string();
         let date = note.formatted_date();
         let is_active = self.selected_id.as_deref() == Some(&note_id);
+        let todo_blocks: Vec<_> = note
+            .blocks
+            .iter()
+            .filter_map(|b| match &b.kind {
+                crate::models::BlockKind::Todo { checked, .. } => Some(*checked),
+                _ => None,
+            })
+            .collect();
+        let has_checklist = !todo_blocks.is_empty() || !note.checklist.is_empty();
 
         div()
             .id(SharedString::from(format!("browse-item-{}", note_id)))
@@ -207,9 +228,9 @@ impl NotesApp {
                     .flex()
                     .items_center()
                     .gap_4()
-                    .when(!note.checklist.is_empty(), |this| {
-                        let done = note.checklist.iter().filter(|i| i.checked).count();
-                        let total = note.checklist.len();
+                    .when(has_checklist, |this| {
+                        let total = if !todo_blocks.is_empty() { todo_blocks.len() } else { note.checklist.len() };
+                        let done = if !todo_blocks.is_empty() { todo_blocks.iter().filter(|&&c| c).count() } else { note.checklist.iter().filter(|i| i.checked).count() };
                         this.child(
                             div()
                                 .text_xs()

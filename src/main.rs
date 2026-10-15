@@ -18,7 +18,7 @@ use gpui_kit::prelude::FluentBuilder;
 use gpui_kit::*;
 use models::Note;
 use storage::Storage;
-use theme::{AppTheme, CurrentScreen, EditorModeView};
+use theme::{AppTheme, CurrentScreen};
 
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -38,15 +38,19 @@ pub struct NotesApp {
     is_syncing: bool,
     show_add_modal: bool,
     is_dark_mode: bool,
-    editor_mode: EditorModeView,
     zen_focus_mode: bool,
 
     // Status message for save feedback
     status_message: Option<(String, Instant)>,
+    _save_task: Option<Task<()>>,
 
     search_state: Entity<InputState>,
     title_state: Entity<InputState>,
     editor_state: Entity<EditorState>,
+    block_input_states: Vec<(String, Entity<InputState>)>,
+    _block_subscriptions: Vec<Subscription>,
+    slash_menu_target: Option<(String, String)>, // (block_id, filter_query)
+    hovered_block_id: Option<String>,
 
     // Cached asset data
     lamp_svg_data: Option<Arc<[u8]>>,
@@ -82,7 +86,7 @@ impl NotesApp {
         let selected_id = notes.first().map(|n| n.id.clone());
 
         let initial_title = notes.first().map(|n| n.title.clone()).unwrap_or_default();
-        let initial_body = notes.first().map(|n| n.body.clone()).unwrap_or_default();
+        let initial_body = notes.first().map(|n| n.plain_text()).unwrap_or_default();
 
         let search_state = cx.new(|cx| {
             InputState::new(window, cx).placeholder("Search notes...")
@@ -122,14 +126,14 @@ impl NotesApp {
             }
             if matches!(event, InputEvent::Change) {
                 let new_title = state.read(cx).value().to_string();
-                if let Some(id) = &this.selected_id {
-                    if let Some(note) = this.notes.iter_mut().find(|n| n.id == *id) {
-                        note.title = new_title;
-                        note.updated_at = chrono::Local::now();
-                        let _ = this.storage.save(note);
-                        cx.notify();
+                    if let Some(id) = &this.selected_id {
+                        if let Some(note) = this.notes.iter_mut().find(|n| n.id == *id) {
+                            note.title = new_title;
+                            note.updated_at = chrono::Local::now();
+                            this.schedule_save(cx);
+                            cx.notify();
+                        }
                     }
-                }
             }
         }));
 
@@ -141,7 +145,7 @@ impl NotesApp {
                 let new_body = state.read(cx).value().to_string();
                 if let Some(id) = &this.selected_id {
                     if let Some(note) = this.notes.iter_mut().find(|n| n.id == *id) {
-                        note.body = new_body;
+                        note.blocks = Note::markdown_to_blocks(&new_body);
                         note.updated_at = chrono::Local::now();
                         let _ = this.storage.save(note);
                         cx.notify();
@@ -162,7 +166,7 @@ impl NotesApp {
             None
         };
 
-        Self {
+        let mut app = Self {
             storage,
             notes,
             selected_id,
@@ -173,12 +177,16 @@ impl NotesApp {
             is_syncing: false,
             show_add_modal: false,
             is_dark_mode: false,
-            editor_mode: EditorModeView::Visual,
             zen_focus_mode: false,
             status_message: None,
+            _save_task: None,
             search_state,
             title_state,
             editor_state,
+            block_input_states: Vec::new(),
+            _block_subscriptions: Vec::new(),
+            slash_menu_target: None,
+            hovered_block_id: None,
             lamp_svg_data,
             logo_png_path,
             show_auth_modal: false,
@@ -193,7 +201,10 @@ impl NotesApp {
             update_checked: false,
             note_to_delete: None,
             _subscriptions: subscriptions,
-        }
+        };
+
+        app.sync_block_inputs(window, cx);
+        app
     }
 
     pub fn theme(&self) -> AppTheme {
@@ -225,14 +236,10 @@ impl NotesApp {
         components::branding::render_zen_lamp(t, self.lamp_svg_data.as_ref())
     }
 
-    #[allow(dead_code)]
-    fn render_vertical_tagline(&self, t: &AppTheme) -> impl IntoElement {
-        components::branding::render_vertical_tagline(t)
-    }
 
 }
 
-fn this_save(note: &Note, storage: &Storage) -> std::io::Result<()> {
+pub(crate) fn this_save(note: &Note, storage: &Storage) -> std::io::Result<()> {
     storage.save(note)
 }
 

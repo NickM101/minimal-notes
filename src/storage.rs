@@ -2,6 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use crate::models::{ChecklistItem, Note, VoiceRecording};
 
+#[derive(Clone)]
 pub struct Storage {
     dir: PathBuf,
 }
@@ -22,7 +23,8 @@ impl Storage {
                 let path = entry.path();
                 if path.extension().and_then(|ext| ext.to_str()) == Some("json") {
                     if let Ok(content) = fs::read_to_string(&path) {
-                        if let Ok(note) = serde_json::from_str::<Note>(&content) {
+                        if let Ok(mut note) = serde_json::from_str::<Note>(&content) {
+                            note.migrate_if_needed();
                             notes.push(note);
                         }
                     }
@@ -174,8 +176,10 @@ impl Storage {
 
     pub fn save(&self, note: &Note) -> std::io::Result<()> {
         let file_path = self.dir.join(format!("{}.json", note.id));
+        let tmp_path = self.dir.join(format!("{}.json.tmp.{}", note.id, uuid::Uuid::new_v4()));
         let json = serde_json::to_string_pretty(note)?;
-        fs::write(file_path, json)?;
+        fs::write(&tmp_path, json)?;
+        fs::rename(&tmp_path, file_path)?;
         Ok(())
     }
 
