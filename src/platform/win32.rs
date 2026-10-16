@@ -40,7 +40,7 @@ pub fn show_and_focus_window(window: &gpui_kit::Window) {
                 let icon_path = std::env::temp_dir().join("notty-app-icon.ico");
                 let icon_bytes: &[u8] = include_bytes!("../../assets/app_icon.ico");
                 if std::fs::write(&icon_path, icon_bytes).is_ok() {
-                    let path_wide: Vec<u16> = OsStr::new(icon_path)
+                    let path_wide: Vec<u16> = OsStr::new(&icon_path)
                         .encode_wide()
                         .chain(std::iter::once(0))
                         .collect();
