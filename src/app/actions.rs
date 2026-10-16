@@ -1,8 +1,8 @@
-use std::time::Instant;
-use gpui_kit::*;
 use crate::models::Note;
 use crate::theme::CurrentScreen;
 use crate::NotesApp;
+use gpui_kit::*;
+use std::time::Instant;
 
 impl NotesApp {
     pub fn open_note(&mut self, id: &str, window: &mut Window, cx: &mut Context<Self>) {
@@ -12,12 +12,13 @@ impl NotesApp {
             self.title_state.update(cx, |s, cx| {
                 s.set_value(&note.title, window, cx);
             });
-            self.editor_state.update(cx, |s, cx| {
-                s.set_value(&note.plain_text(), window, cx);
-            });
             self.is_syncing = false;
         }
-        self.sync_block_inputs(window, cx);
+        // Switching notes means every block id differs, so the reconcile
+        // rebuilds the input states from scratch — per-block undo resets,
+        // which is the correct scope boundary.
+        self.focused_block_id = None;
+        self.reconcile_block_inputs(window, cx);
         self.current_screen = CurrentScreen::Editor;
         cx.notify();
     }
@@ -33,12 +34,14 @@ impl NotesApp {
         self.title_state.update(cx, |s, cx| {
             s.set_value("", window, cx);
         });
-        self.editor_state.update(cx, |s, cx| {
-            s.set_value("", window, cx);
-        });
         self.is_syncing = false;
-        self.sync_block_inputs(window, cx);
+        self.focused_block_id = None;
+        self.reconcile_block_inputs(window, cx);
         self.current_screen = CurrentScreen::Editor;
+        // Start writing immediately: put the caret in the title of the fresh note
+        self.title_state.update(cx, |s, cx| {
+            s.focus(window, cx);
+        });
         cx.notify();
     }
 

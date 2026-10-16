@@ -113,7 +113,9 @@ impl Note {
                         text,
                     }));
                 }
-                MarkdownBlock::Checklist { is_checked, text, .. } => {
+                MarkdownBlock::Checklist {
+                    is_checked, text, ..
+                } => {
                     blocks.push(Block::new(BlockKind::Todo {
                         text,
                         checked: is_checked,
@@ -208,6 +210,8 @@ impl Note {
     }
 
     pub fn formatted_full_date(&self) -> String {
-        self.updated_at.format("%B %-d, %Y at %-I:%M %p").to_string()
+        self.updated_at
+            .format("%B %-d, %Y at %-I:%M %p")
+            .to_string()
     }
 }

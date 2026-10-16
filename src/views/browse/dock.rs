@@ -1,8 +1,8 @@
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
-use gpui_kit::component::{Icon, IconName};
 use crate::theme::AppTheme;
 use crate::NotesApp;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{Icon, IconName};
+use gpui_kit::*;
 
 pub fn render_bottom_dock(
     _this: &NotesApp,

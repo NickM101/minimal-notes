@@ -1,12 +1,16 @@
-use std::time::Instant;
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
-use gpui_kit::component::{Icon, IconName};
 use crate::theme::AppTheme;
 use crate::NotesApp;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{Icon, IconName};
+use gpui_kit::*;
+use std::time::Instant;
 
 impl NotesApp {
-    pub(crate) fn render_update_modal(&self, t: &AppTheme, cx: &mut Context<Self>) -> impl IntoElement {
+    pub(crate) fn render_update_modal(
+        &self,
+        t: &AppTheme,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
         let is_checking = self.is_checking_update;
         let checked = self.update_checked;
 
@@ -194,7 +198,4 @@ impl NotesApp {
                     ),
             )
     }
-
-
 }
-

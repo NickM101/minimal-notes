@@ -1,12 +1,18 @@
-use std::time::Instant;
-use gpui_kit::base::StyledExt;
-use gpui_kit::component::{button::{Button, ButtonVariants}, input::Input, Icon, IconName, Sizable};
-use gpui_kit::prelude::FluentBuilder;
-use gpui_kit::*;
+use crate::app::editor_reducer::EditorAction;
 use crate::models::{Block, BlockKind};
 use crate::theme::AppTheme;
 use crate::views::editor::inline::render_inline_spans;
 use crate::NotesApp;
+use gpui_kit::assets::IconName;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{
+    button::{Button, ButtonVariants},
+    input::{Backspace, Escape, IndentInline, Input, MoveDown, MoveUp, OutdentInline},
+    Icon, Sizable,
+};
+use gpui_kit::prelude::FluentBuilder;
+use gpui_kit::*;
+use std::time::Instant;
 
 impl NotesApp {
     /// Renders the note's structured `Vec<Block>` in a centered, clean reading canvas.
@@ -27,7 +33,12 @@ impl NotesApp {
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let slash_target_id = self.slash_menu_target.as_ref().map(|(id, _)| id.clone());
-        let slash_query = self.slash_menu_target.as_ref().map(|(_, q)| q.to_lowercase()).unwrap_or_default();
+        let slash_query = self
+            .slash_menu_target
+            .as_ref()
+            .map(|(_, q)| q.to_lowercase())
+            .unwrap_or_default();
+        let slash_selection = self.slash_menu_selection;
 
         div()
             .flex()
@@ -36,80 +47,173 @@ impl NotesApp {
             .py_2()
             .w_full()
             .relative()
-            .children(blocks.iter().enumerate().map(|(idx, block)| {
-                let block_id = block.id.clone();
-                let is_hovered = self.hovered_block_id.as_deref() == Some(&block_id);
-                let is_this_slash_target = slash_target_id.as_deref() == Some(&block_id);
-                let bid_hover = block_id.clone();
-                let bid_action = block_id.clone();
-
-                div()
-                    .id(SharedString::from(format!("block-row-{}", block_id)))
-                    .flex()
-                    .items_start()
-                    .relative()
-                    .w_full()
-                    .group("block-row")
-                    .on_hover(cx.listener(move |this, is_over, _window, cx| {
-                        if *is_over {
-                            if this.hovered_block_id.as_deref() != Some(&bid_hover) {
-                                this.hovered_block_id = Some(bid_hover.clone());
-                                cx.notify();
+            // Block-level key handling, ported from cascade-editor's action model:
+            // the focused Input consumes keys it owns; only these actions ever
+            // reach the canvas. Backspace-at-start propagates from the input by
+            // design (merge hook); up/down/tab are unhandled by single-line inputs.
+            .on_action(cx.listener(move |this, _: &Backspace, window, cx| {
+                if let Some(id) = this.focused_block_id.clone() {
+                    this.dispatch(EditorAction::MergeWithPrevious { id }, window, cx);
+                }
+            }))
+            .on_action(cx.listener(move |this, _: &MoveUp, _window, cx| {
+                // Slash menu open? Arrow keys navigate the menu, not the document.
+                if this.slash_menu_target.is_some() {
+                    this.slash_nav(true, cx);
+                } else {
+                    this.focus_adjacent_block(true, _window, cx);
+                }
+            }))
+            .on_action(cx.listener(move |this, _: &MoveDown, _window, cx| {
+                if this.slash_menu_target.is_some() {
+                    this.slash_nav(false, cx);
+                } else {
+                    this.focus_adjacent_block(false, _window, cx);
+                }
+            }))
+            .on_action(cx.listener(move |this, _: &IndentInline, window, cx| {
+                if let Some(id) = this.focused_block_id.clone() {
+                    this.dispatch(EditorAction::Indent { id, delta: 1 }, window, cx);
+                }
+            }))
+            .on_action(cx.listener(move |this, _: &OutdentInline, window, cx| {
+                if let Some(id) = this.focused_block_id.clone() {
+                    this.dispatch(EditorAction::Indent { id, delta: -1 }, window, cx);
+                }
+            }))
+            .on_action(cx.listener(move |this, _: &Escape, _window, cx| {
+                this.slash_close(cx);
+            }))
+            .children({
+                let mut num_counter: usize = 0;
+                blocks
+                    .iter()
+                    .enumerate()
+                    .map(move |(idx, block)| {
+                        // Fix 8: track numbered list sequence, reset on any non-Numbered block
+                        match &block.kind {
+                            crate::models::BlockKind::Numbered { .. } => {
+                                num_counter += 1;
                             }
-                        } else {
-                            if this.hovered_block_id.as_deref() == Some(&bid_hover) {
-                                this.hovered_block_id = None;
-                                cx.notify();
+                            _ => {
+                                num_counter = 0;
                             }
                         }
-                    }))
-                    // Left Gutter: 24px icon handle
-                    .child(
+                        let display_num = num_counter;
+
+                        let block_id = block.id.clone();
+                        let is_hovered = self.hovered_block_id.as_deref() == Some(&block_id);
+                        let is_this_slash_target = slash_target_id.as_deref() == Some(&block_id);
+                        let bid_hover = block_id.clone();
+                        let bid_action = block_id.clone();
+                        let bid_click = block_id.clone(); // Fix 1
+
                         div()
-                            .w(px(24.0))
-                            .min_w(px(24.0))
-                            .h(px(26.0))
+                            .id(SharedString::from(format!("block-row-{}", block_id)))
                             .flex()
-                            .items_center()
-                            .justify_center()
-                            .mr_1p5()
-                            .opacity(if is_hovered { 1.0 } else { 0.0 })
+                            .items_start()
+                            .relative()
+                            .w_full()
+                            .group("block-row")
+                            // No focus border: a border toggling on focus shifted layout by 2px
+                            .on_hover(cx.listener(move |this, is_over, _window, cx| {
+                                if *is_over {
+                                    if this.hovered_block_id.as_deref() != Some(&bid_hover) {
+                                        this.hovered_block_id = Some(bid_hover.clone());
+                                        cx.notify();
+                                    }
+                                } else {
+                                    if this.hovered_block_id.as_deref() == Some(&bid_hover) {
+                                        this.hovered_block_id = None;
+                                        cx.notify();
+                                    }
+                                }
+                            }))
+                            // Fix 1: click the row → focus this block's input
+                            .on_click(cx.listener(move |this, _, window, cx| {
+                                // Keep the click from bubbling to the canvas (which focuses the last block)
+                                cx.stop_propagation();
+                                if let Some(handle) = this
+                                    .block_input_states
+                                    .iter()
+                                    .find(|h| h.block_id == bid_click)
+                                {
+                                    let state = handle.state.clone();
+                                    state.update(cx, |s, cx| {
+                                        s.focus(window, cx);
+                                    });
+                                }
+                            }))
+                            // Left Gutter: 24px icon handle
                             .child(
                                 div()
-                                    .id(SharedString::from(format!("gutter-btn-{}", block_id)))
-                                    .cursor_pointer()
-                                    .p_0p5()
-                                    .rounded_sm()
-                                    .hover(|s| s.bg(hsla(0.0, 0.0, 0.5, 0.15)))
+                                    .w(px(24.0))
+                                    .min_w(px(24.0))
+                                    .h(px(26.0))
+                                    .flex()
+                                    .items_center()
+                                    .justify_center()
+                                    .mr_1p5()
+                                    .opacity(if is_hovered { 1.0 } else { 0.0 })
                                     .child(
-                                        Icon::new(IconName::Menu)
-                                            .size_3p5()
-                                            .text_color(t.ink_muted),
-                                    )
-                                    .on_click(cx.listener(move |this, _, _window, cx| {
-                                        // Gutter click opens the slash menu on this block!
-                                        this.slash_menu_target = Some((bid_action.clone(), String::new()));
-                                        cx.notify();
-                                    })),
-                            ),
-                    )
-                    // Block content
-                    .child(
-                        div()
-                            .flex_1()
-                            .child(self.render_read_only_block(idx, block, t, cx))
-                            // Inline Slash Command Popover Menu directly under this block!
-                            .when(is_this_slash_target, |this| {
-                                this.child(crate::views::editor::slash_menu::render_slash_menu(&block_id, &slash_query, t, cx))
-                            }),
-                    )
-                    .into_any_element()
-            }))
+                                        div()
+                                            .id(SharedString::from(format!(
+                                                "gutter-btn-{}",
+                                                block_id
+                                            )))
+                                            .cursor_pointer()
+                                            .p_0p5()
+                                            .rounded_sm()
+                                            .hover(|s| s.bg(hsla(0.0, 0.0, 0.5, 0.15)))
+                                            // Drag-handle grip affordance
+                                            .child(
+                                                Icon::new(IconName::GripVertical)
+                                                    .size_4()
+                                                    .text_color(t.ink_muted),
+                                            )
+                                            .on_click(cx.listener(move |this, _, _window, cx| {
+                                                // Gutter click opens the slash menu on this block!
+                                                this.slash_menu_target =
+                                                    Some((bid_action.clone(), String::new()));
+                                                this.slash_menu_selection = Some(0);
+                                                cx.notify();
+                                            })),
+                                    ),
+                            )
+                            // Block content
+                            .child(
+                                div()
+                                    .flex_1()
+                                    .child(self.render_read_only_block(
+                                        idx,
+                                        display_num,
+                                        block,
+                                        t,
+                                        cx,
+                                    ))
+                                    // Inline Slash Command Popover Menu directly under this block!
+                                    .when(is_this_slash_target, |this| {
+                                        this.child(
+                                            crate::views::editor::slash_menu::render_slash_menu(
+                                                &block_id,
+                                                &slash_query,
+                                                slash_selection,
+                                                t,
+                                                cx,
+                                            ),
+                                        )
+                                    }),
+                            )
+                            .into_any_element()
+                    })
+                    .collect::<Vec<_>>()
+            })
     }
 
     fn render_read_only_block(
         &self,
-        idx: usize,
+        _idx: usize,
+        display_num: usize, // Fix 8: sequential number within its list run
         block: &Block,
         t: &AppTheme,
         cx: &mut Context<Self>,
@@ -119,8 +223,8 @@ impl NotesApp {
         let maybe_input_state = self
             .block_input_states
             .iter()
-            .find(|(id, _)| id == &block_id)
-            .map(|(_, state)| state.clone());
+            .find(|h| h.block_id == block_id)
+            .map(|h| h.state.clone());
 
         match &block.kind {
             BlockKind::Paragraph { text } => {
@@ -137,6 +241,7 @@ impl NotesApp {
                     block_el = block_el.child(
                         Input::new(&state)
                             .bordered(false)
+                            .appearance(false)
                             .w_full(),
                     );
                 } else {
@@ -151,20 +256,6 @@ impl NotesApp {
                         block_el = block_el.child(render_inline_spans(&text_clone, t));
                     }
                 }
-                let bid_enter = block_id.clone();
-                let bid_bs = block_id.clone();
-                let bid_arr = block_id.clone();
-                block_el = block_el.on_key_down(cx.listener(move |this, event: &KeyDownEvent, window, cx| {
-                    if event.keystroke.key == "backspace" {
-                        this.handle_block_backspace(&bid_bs, window, cx);
-                    } else if event.keystroke.key == "enter" {
-                        this.handle_block_enter(&bid_enter, window, cx);
-                    } else if event.keystroke.key == "up" {
-                        this.handle_block_arrow(&bid_arr, true, window, cx);
-                    } else if event.keystroke.key == "down" {
-                        this.handle_block_arrow(&bid_arr, false, window, cx);
-                    }
-                }));
                 block_el.into_any_element()
             }
             BlockKind::Heading { level, text } => {
@@ -196,34 +287,23 @@ impl NotesApp {
                         .text_color(t.ink),
                 };
 
-                let mut container = heading_el.id(SharedString::from(format!("block-h-{}", block_id)));
+                let mut container =
+                    heading_el.id(SharedString::from(format!("block-h-{}", block_id)));
                 if let Some(state) = maybe_input_state {
                     container = container.child(
                         Input::new(&state)
                             .bordered(false)
+                            .appearance(false)
                             .w_full(),
                     );
                 } else if text_clone.trim().is_empty() {
-                    container = container.child(render_inline_spans("Heading...", t).into_any_element());
+                    container =
+                        container.child(render_inline_spans("Heading...", t).into_any_element());
                 } else {
-                    container = container.child(render_inline_spans(&text_clone, t).into_any_element());
+                    container =
+                        container.child(render_inline_spans(&text_clone, t).into_any_element());
                 }
-                let bid_enter = block_id.clone();
-                let bid_bs = block_id.clone();
-                let bid_arr = block_id.clone();
-                container
-                    .on_key_down(cx.listener(move |this, event: &KeyDownEvent, window, cx| {
-                        if event.keystroke.key == "backspace" {
-                            this.handle_block_backspace(&bid_bs, window, cx);
-                        } else if event.keystroke.key == "enter" {
-                            this.handle_block_enter(&bid_enter, window, cx);
-                        } else if event.keystroke.key == "up" {
-                            this.handle_block_arrow(&bid_arr, true, window, cx);
-                        } else if event.keystroke.key == "down" {
-                            this.handle_block_arrow(&bid_arr, false, window, cx);
-                        }
-                    }))
-                    .into_any_element()
+                container.into_any_element()
             }
             BlockKind::Bullet { text, indent } => {
                 let text_clone = text.clone();
@@ -232,6 +312,7 @@ impl NotesApp {
                 let content_el: AnyElement = if let Some(state) = maybe_input_state {
                     Input::new(&state)
                         .bordered(false)
+                        .appearance(false)
                         .w_full()
                         .into_any_element()
                 } else {
@@ -243,9 +324,6 @@ impl NotesApp {
                         .into_any_element()
                 };
 
-                let bid_enter = block_id.clone();
-                let bid_bs = block_id.clone();
-                let bid_arr = block_id.clone();
                 div()
                     .id(SharedString::from(format!("block-bullet-{}", block_id)))
                     .flex()
@@ -262,29 +340,17 @@ impl NotesApp {
                             .bg(t.ink),
                     )
                     .child(div().flex_1().child(content_el))
-                    .on_key_down(cx.listener(move |this, event: &KeyDownEvent, window, cx| {
-                        if event.keystroke.key == "tab" {
-                            this.handle_block_tab(&bid_arr, event.keystroke.modifiers.shift, cx);
-                        } else if event.keystroke.key == "backspace" {
-                            this.handle_block_backspace(&bid_bs, window, cx);
-                        } else if event.keystroke.key == "enter" {
-                            this.handle_block_enter(&bid_enter, window, cx);
-                        } else if event.keystroke.key == "up" {
-                            this.handle_block_arrow(&bid_arr, true, window, cx);
-                        } else if event.keystroke.key == "down" {
-                            this.handle_block_arrow(&bid_arr, false, window, cx);
-                        }
-                    }))
                     .into_any_element()
             }
             BlockKind::Numbered { text, indent } => {
                 let text_clone = text.clone();
                 let indent_px = px(24.0 * (*indent as f32));
-                let display_num = format!("{}.", idx + 1);
+                // display_num is passed in from the parent iterator (Fix 8)
 
                 let content_el: AnyElement = if let Some(state) = maybe_input_state {
                     Input::new(&state)
                         .bordered(false)
+                        .appearance(false)
                         .w_full()
                         .into_any_element()
                 } else {
@@ -296,9 +362,6 @@ impl NotesApp {
                         .into_any_element()
                 };
 
-                let bid_enter = block_id.clone();
-                let bid_bs = block_id.clone();
-                let bid_arr = block_id.clone();
                 div()
                     .id(SharedString::from(format!("block-num-{}", block_id)))
                     .flex()
@@ -313,22 +376,10 @@ impl NotesApp {
                             .line_height(relative(1.6))
                             .font_semibold()
                             .text_color(t.ink_muted)
-                            .child(display_num),
+                            // Fix 8: use display_num (counted within the consecutive run)
+                            .child(format!("{}.", display_num)),
                     )
                     .child(div().flex_1().child(content_el))
-                    .on_key_down(cx.listener(move |this, event: &KeyDownEvent, window, cx| {
-                        if event.keystroke.key == "tab" {
-                            this.handle_block_tab(&bid_arr, event.keystroke.modifiers.shift, cx);
-                        } else if event.keystroke.key == "backspace" {
-                            this.handle_block_backspace(&bid_bs, window, cx);
-                        } else if event.keystroke.key == "enter" {
-                            this.handle_block_enter(&bid_enter, window, cx);
-                        } else if event.keystroke.key == "up" {
-                            this.handle_block_arrow(&bid_arr, true, window, cx);
-                        } else if event.keystroke.key == "down" {
-                            this.handle_block_arrow(&bid_arr, false, window, cx);
-                        }
-                    }))
                     .into_any_element()
             }
             BlockKind::Todo { text, checked } => {
@@ -339,6 +390,7 @@ impl NotesApp {
                 let content_el: AnyElement = if let Some(state) = maybe_input_state {
                     Input::new(&state)
                         .bordered(false)
+                        .appearance(false)
                         .w_full()
                         .into_any_element()
                 } else {
@@ -351,9 +403,6 @@ impl NotesApp {
                         .into_any_element()
                 };
 
-                let bid_enter = block_id.clone();
-                let bid_bs = block_id.clone();
-                let bid_arr = block_id.clone();
                 div()
                     .id(SharedString::from(format!("block-todo-{}", block_id)))
                     .flex()
@@ -392,17 +441,6 @@ impl NotesApp {
                             .when(is_checked, |s| s.opacity(0.6).line_through())
                             .child(content_el),
                     )
-                    .on_key_down(cx.listener(move |this, event: &KeyDownEvent, window, cx| {
-                        if event.keystroke.key == "backspace" {
-                            this.handle_block_backspace(&bid_bs, window, cx);
-                        } else if event.keystroke.key == "enter" {
-                            this.handle_block_enter(&bid_enter, window, cx);
-                        } else if event.keystroke.key == "up" {
-                            this.handle_block_arrow(&bid_arr, true, window, cx);
-                        } else if event.keystroke.key == "down" {
-                            this.handle_block_arrow(&bid_arr, false, window, cx);
-                        }
-                    }))
                     .into_any_element()
             }
             BlockKind::Quote { text } => {
@@ -411,6 +449,7 @@ impl NotesApp {
                 let content_el: AnyElement = if let Some(state) = maybe_input_state {
                     Input::new(&state)
                         .bordered(false)
+                        .appearance(false)
                         .w_full()
                         .into_any_element()
                 } else {
@@ -422,9 +461,6 @@ impl NotesApp {
                         .into_any_element()
                 };
 
-                let bid_enter = block_id.clone();
-                let bid_bs = block_id.clone();
-                let bid_arr = block_id.clone();
                 div()
                     .id(SharedString::from(format!("block-quote-{}", block_id)))
                     .my_2()
@@ -436,17 +472,6 @@ impl NotesApp {
                     .rounded_r_sm()
                     .italic()
                     .child(content_el)
-                    .on_key_down(cx.listener(move |this, event: &KeyDownEvent, window, cx| {
-                        if event.keystroke.key == "backspace" {
-                            this.handle_block_backspace(&bid_bs, window, cx);
-                        } else if event.keystroke.key == "enter" {
-                            this.handle_block_enter(&bid_enter, window, cx);
-                        } else if event.keystroke.key == "up" {
-                            this.handle_block_arrow(&bid_arr, true, window, cx);
-                        } else if event.keystroke.key == "down" {
-                            this.handle_block_arrow(&bid_arr, false, window, cx);
-                        }
-                    }))
                     .into_any_element()
             }
             BlockKind::Code { language, text } => {
@@ -494,63 +519,63 @@ impl NotesApp {
                                     .label("Copy")
                                     .tooltip("Copy code snippet")
                                     .on_click(cx.listener(move |this, _, _, cx| {
-                                        cx.write_to_clipboard(ClipboardItem::new_string(text_clone.clone()));
-                                        this.status_message = Some(("Copied to clipboard".to_string(), Instant::now()));
+                                        cx.write_to_clipboard(ClipboardItem::new_string(
+                                            text_clone.clone(),
+                                        ));
+                                        this.status_message = Some((
+                                            "Copied to clipboard".to_string(),
+                                            Instant::now(),
+                                        ));
                                         cx.notify();
                                     })),
                             ),
                     )
-                    .child(
-                        if let Some(state) = maybe_input_state {
-                            div()
-                                .p_2()
-                                .font_family(SharedString::from("Consolas, Menlo, Monaco, monospace"))
-                                .text_size(px(14.0))
-                                .line_height(relative(1.5))
-                                .child(
-                                    Input::new(&state)
-                                        .bordered(false)
-                                        .w_full(),
-                                )
-                                .into_any_element()
-                        } else {
-                            div()
-                                .p_3()
-                                .overflow_hidden()
-                                .font_family(SharedString::from("Consolas, Menlo, Monaco, monospace"))
-                                .text_size(px(14.0))
-                                .line_height(relative(1.5))
-                                .text_color(t.ink)
-                                .child(text.clone())
-                                .into_any_element()
-                        },
-                    )
+                    .child(if let Some(state) = maybe_input_state {
+                        div()
+                            .p_2()
+                            .font_family(SharedString::from("Consolas, Menlo, Monaco, monospace"))
+                            .text_size(px(14.0))
+                            .line_height(relative(1.5))
+                            .child(
+                                Input::new(&state)
+                                    .bordered(false)
+                                    .appearance(false)
+                                    .w_full(),
+                            )
+                            .into_any_element()
+                    } else {
+                        div()
+                            .p_3()
+                            .overflow_hidden()
+                            .font_family(SharedString::from("Consolas, Menlo, Monaco, monospace"))
+                            .text_size(px(14.0))
+                            .line_height(relative(1.5))
+                            .text_color(t.ink)
+                            .child(text.clone())
+                            .into_any_element()
+                    })
                     .into_any_element()
             }
-            BlockKind::Divider => {
-                div()
-                    .id(SharedString::from(format!("block-div-{}", block_id)))
-                    .my_4()
-                    .h_px()
-                    .w_full()
-                    .bg(t.ink_faint)
-                    .into_any_element()
-            }
-            BlockKind::Unknown => {
-                div()
-                    .id(SharedString::from(format!("block-unknown-{}", block_id)))
-                    .my_2()
-                    .p_3()
-                    .rounded_md()
-                    .border_1()
-                    .border_dashed()
-                    .border_color(t.ink_faint)
-                    .bg(t.surface)
-                    .text_xs()
-                    .text_color(t.ink_muted)
-                    .child("Custom Block (preserved)")
-                    .into_any_element()
-            }
+            BlockKind::Divider => div()
+                .id(SharedString::from(format!("block-div-{}", block_id)))
+                .my_4()
+                .h_px()
+                .w_full()
+                .bg(t.ink_faint)
+                .into_any_element(),
+            BlockKind::Unknown => div()
+                .id(SharedString::from(format!("block-unknown-{}", block_id)))
+                .my_2()
+                .p_3()
+                .rounded_md()
+                .border_1()
+                .border_dashed()
+                .border_color(t.ink_faint)
+                .bg(t.surface)
+                .text_xs()
+                .text_color(t.ink_muted)
+                .child("Custom Block (preserved)")
+                .into_any_element(),
         }
     }
 
@@ -568,6 +593,4 @@ impl NotesApp {
             }
         }
     }
-
-
 }

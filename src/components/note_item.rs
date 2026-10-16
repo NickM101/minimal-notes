@@ -1,15 +1,23 @@
-use gpui_kit::assets::IconName as FullIconName;
-use gpui_kit::base::StyledExt;
-use gpui_kit::component::{button::{Button, ButtonVariants}, IconName, Sizable};
-use gpui_kit::prelude::FluentBuilder;
-use gpui_kit::*;
 use crate::models::Note;
 use crate::theme::AppTheme;
 use crate::NotesApp;
+use gpui_kit::assets::IconName as FullIconName;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{
+    button::{Button, ButtonVariants},
+    IconName, Sizable,
+};
+use gpui_kit::prelude::FluentBuilder;
+use gpui_kit::*;
 
 impl NotesApp {
     /// Renders a single note card for the Grid view.
-    pub(crate) fn render_note_card(&self, note: &Note, t: &AppTheme, cx: &mut Context<Self>) -> impl IntoElement {
+    pub(crate) fn render_note_card(
+        &self,
+        note: &Note,
+        t: &AppTheme,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
         let note_id = note.id.clone();
         let note_id_view = note.id.clone();
         let note_id_edit = note.id.clone();
@@ -98,12 +106,7 @@ impl NotesApp {
                             .flex()
                             .items_center()
                             .gap_2()
-                            .child(
-                                div()
-                                    .text_xs()
-                                    .text_color(t.ink_muted)
-                                    .child(date),
-                            )
+                            .child(div().text_xs().text_color(t.ink_muted).child(date))
                             .when_some(checklist_summary, |this, sum| {
                                 this.child(
                                     div()
@@ -120,47 +123,70 @@ impl NotesApp {
                     )
                     .child(
                         div()
-                            .id(SharedString::from(format!("browse-grid-actions-{}", note_id_del)))
+                            .id(SharedString::from(format!(
+                                "browse-grid-actions-{}",
+                                note_id_del
+                            )))
                             .flex()
                             .items_center()
                             .gap_0p5()
                             .child(
-                                Button::new(SharedString::from(format!("btn-grid-view-{}", note_id_view)))
-                                    .icon(IconName::Eye)
-                                    .ghost()
-                                    .small()
-                                    .tooltip("View Note")
-                                    .on_click(cx.listener(move |this, _, window, cx| {
+                                Button::new(SharedString::from(format!(
+                                    "btn-grid-view-{}",
+                                    note_id_view
+                                )))
+                                .icon(IconName::Eye)
+                                .ghost()
+                                .small()
+                                .tooltip("View Note")
+                                .on_click(cx.listener(
+                                    move |this, _, window, cx| {
                                         this.open_note(&note_id_view, window, cx);
-                                    })),
+                                    },
+                                )),
                             )
                             .child(
-                                Button::new(SharedString::from(format!("btn-grid-edit-{}", note_id_edit)))
-                                    .icon(FullIconName::Pencil)
-                                    .ghost()
-                                    .small()
-                                    .tooltip("Edit Note")
-                                    .on_click(cx.listener(move |this, _, window, cx| {
+                                Button::new(SharedString::from(format!(
+                                    "btn-grid-edit-{}",
+                                    note_id_edit
+                                )))
+                                .icon(FullIconName::Pencil)
+                                .ghost()
+                                .small()
+                                .tooltip("Edit Note")
+                                .on_click(cx.listener(
+                                    move |this, _, window, cx| {
                                         this.open_note(&note_id_edit, window, cx);
-                                    })),
+                                    },
+                                )),
                             )
                             .child(
-                                Button::new(SharedString::from(format!("btn-grid-del-{}", note_id_del)))
-                                    .icon(FullIconName::Trash)
-                                    .ghost()
-                                    .small()
-                                    .tooltip("Delete Note")
-                                    .on_click(cx.listener(move |this, _, _, cx| {
+                                Button::new(SharedString::from(format!(
+                                    "btn-grid-del-{}",
+                                    note_id_del
+                                )))
+                                .icon(FullIconName::Trash)
+                                .ghost()
+                                .small()
+                                .tooltip("Delete Note")
+                                .on_click(cx.listener(
+                                    move |this, _, _, cx| {
                                         this.note_to_delete = Some(note_id_del.clone());
                                         cx.notify();
-                                    })),
+                                    },
+                                )),
                             ),
                     ),
             )
     }
 
     /// Renders a single note row for the List view.
-    pub(crate) fn render_note_list_item(&self, note: &Note, t: &AppTheme, cx: &mut Context<Self>) -> impl IntoElement {
+    pub(crate) fn render_note_list_item(
+        &self,
+        note: &Note,
+        t: &AppTheme,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
         let note_id = note.id.clone();
         let note_id_view = note.id.clone();
         let note_id_edit = note.id.clone();
@@ -229,8 +255,16 @@ impl NotesApp {
                     .items_center()
                     .gap_4()
                     .when(has_checklist, |this| {
-                        let total = if !todo_blocks.is_empty() { todo_blocks.len() } else { note.checklist.len() };
-                        let done = if !todo_blocks.is_empty() { todo_blocks.iter().filter(|&&c| c).count() } else { note.checklist.iter().filter(|i| i.checked).count() };
+                        let total = if !todo_blocks.is_empty() {
+                            todo_blocks.len()
+                        } else {
+                            note.checklist.len()
+                        };
+                        let done = if !todo_blocks.is_empty() {
+                            todo_blocks.iter().filter(|&&c| c).count()
+                        } else {
+                            note.checklist.iter().filter(|i| i.checked).count()
+                        };
                         this.child(
                             div()
                                 .text_xs()
@@ -253,40 +287,58 @@ impl NotesApp {
                     // Note Actions: Eye (View), Pencil (Edit), Trash (Delete)
                     .child(
                         div()
-                            .id(SharedString::from(format!("browse-actions-{}", note_id_del)))
+                            .id(SharedString::from(format!(
+                                "browse-actions-{}",
+                                note_id_del
+                            )))
                             .flex()
                             .items_center()
                             .gap_1()
                             .child(
-                                Button::new(SharedString::from(format!("btn-browse-view-{}", note_id_view)))
-                                    .icon(IconName::Eye)
-                                    .ghost()
-                                    .small()
-                                    .tooltip("View Note")
-                                    .on_click(cx.listener(move |this, _, window, cx| {
+                                Button::new(SharedString::from(format!(
+                                    "btn-browse-view-{}",
+                                    note_id_view
+                                )))
+                                .icon(IconName::Eye)
+                                .ghost()
+                                .small()
+                                .tooltip("View Note")
+                                .on_click(cx.listener(
+                                    move |this, _, window, cx| {
                                         this.open_note(&note_id_view, window, cx);
-                                    })),
+                                    },
+                                )),
                             )
                             .child(
-                                Button::new(SharedString::from(format!("btn-browse-edit-{}", note_id_edit)))
-                                    .icon(FullIconName::Pencil)
-                                    .ghost()
-                                    .small()
-                                    .tooltip("Edit Note")
-                                    .on_click(cx.listener(move |this, _, window, cx| {
+                                Button::new(SharedString::from(format!(
+                                    "btn-browse-edit-{}",
+                                    note_id_edit
+                                )))
+                                .icon(FullIconName::Pencil)
+                                .ghost()
+                                .small()
+                                .tooltip("Edit Note")
+                                .on_click(cx.listener(
+                                    move |this, _, window, cx| {
                                         this.open_note(&note_id_edit, window, cx);
-                                    })),
+                                    },
+                                )),
                             )
                             .child(
-                                Button::new(SharedString::from(format!("btn-browse-del-{}", note_id_del)))
-                                    .icon(FullIconName::Trash)
-                                    .ghost()
-                                    .small()
-                                    .tooltip("Delete Note")
-                                    .on_click(cx.listener(move |this, _, _, cx| {
+                                Button::new(SharedString::from(format!(
+                                    "btn-browse-del-{}",
+                                    note_id_del
+                                )))
+                                .icon(FullIconName::Trash)
+                                .ghost()
+                                .small()
+                                .tooltip("Delete Note")
+                                .on_click(cx.listener(
+                                    move |this, _, _, cx| {
                                         this.note_to_delete = Some(note_id_del.clone());
                                         cx.notify();
-                                    })),
+                                    },
+                                )),
                             ),
                     ),
             )

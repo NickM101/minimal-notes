@@ -1,10 +1,18 @@
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
-use gpui_kit::component::{button::{Button, ButtonVariants}, IconName, Sizable};
-use crate::theme::{AppTheme, CurrentScreen, LIGHT_INK};
+use crate::theme::{AppTheme, CurrentScreen};
 use crate::NotesApp;
+use gpui_kit::assets::IconName;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{
+    button::{Button, ButtonVariants},
+    Sizable,
+};
+use gpui_kit::*;
 
-pub fn render_top_nav(this: &NotesApp, t: &AppTheme, cx: &mut Context<NotesApp>) -> impl IntoElement {
+pub fn render_top_nav(
+    this: &NotesApp,
+    t: &AppTheme,
+    cx: &mut Context<NotesApp>,
+) -> impl IntoElement {
     div()
         .flex()
         .items_center()
@@ -106,7 +114,13 @@ pub fn render_top_nav(this: &NotesApp, t: &AppTheme, cx: &mut Context<NotesApp>)
         )
 }
 
-pub fn render_formatting_strip(_this: &NotesApp, t: &AppTheme, cx: &mut Context<NotesApp>) -> impl IntoElement {
+pub fn render_formatting_strip(
+    _this: &NotesApp,
+    t: &AppTheme,
+    cx: &mut Context<NotesApp>,
+) -> impl IntoElement {
+    // Keep the strip minimal: only block-level transforms that actually work.
+    // Inline styles (bold/italic/highlight) are typed as markdown instead.
     div()
         .flex()
         .items_center()
@@ -148,79 +162,8 @@ pub fn render_formatting_strip(_this: &NotesApp, t: &AppTheme, cx: &mut Context<
         )
         .child(div().w_px().h(px(14.0)).bg(t.ink_faint).mx_1())
         .child(
-            Button::new("fmt-bold")
-                .ghost()
-                .small()
-                .label("B")
-                .tooltip("Bold (**text**)")
-                .on_click(cx.listener(|this, _, window, cx| {
-                    this.insert_formatting("bold", window, cx);
-                })),
-        )
-        .child(
-            Button::new("fmt-italic")
-                .ghost()
-                .small()
-                .label("I")
-                .tooltip("Italic (*text*)")
-                .on_click(cx.listener(|this, _, window, cx| {
-                    this.insert_formatting("italic", window, cx);
-                })),
-        )
-        .child(
-            div()
-                .id("fmt-highlight")
-                .cursor_pointer()
-                .w(px(20.0))
-                .h(px(20.0))
-                .bg(t.highlight)
-                .rounded_sm()
-                .flex()
-                .items_center()
-                .justify_center()
-                .text_xs()
-                .font_bold()
-                .text_color(LIGHT_INK)
-                .hover(|s| s.opacity(0.8))
-                .on_click(cx.listener(|this, _, window, cx| {
-                    this.insert_formatting("highlight", window, cx);
-                }))
-                .child("T"),
-        )
-        .child(
-            Button::new("fmt-strike")
-                .ghost()
-                .small()
-                .label("~")
-                .tooltip("Strikethrough (~~text~~)")
-                .on_click(cx.listener(|this, _, window, cx| {
-                    this.insert_formatting("strike", window, cx);
-                })),
-        )
-        .child(
-            Button::new("fmt-code-inline")
-                .ghost()
-                .small()
-                .label("`")
-                .tooltip("Inline Code (`code`)")
-                .on_click(cx.listener(|this, _, window, cx| {
-                    this.insert_formatting("code_inline", window, cx);
-                })),
-        )
-        .child(div().w_px().h(px(14.0)).bg(t.ink_faint).mx_1())
-        .child(
-            Button::new("fmt-task")
-                .icon(IconName::Check)
-                .ghost()
-                .small()
-                .tooltip("Interactive Task (- [ ])")
-                .on_click(cx.listener(|this, _, window, cx| {
-                    this.insert_formatting("checklist", window, cx);
-                })),
-        )
-        .child(
             Button::new("fmt-bullet")
-                .icon(IconName::Menu)
+                .icon(IconName::List)
                 .ghost()
                 .small()
                 .tooltip("Bullet List (- item)")
@@ -230,37 +173,37 @@ pub fn render_formatting_strip(_this: &NotesApp, t: &AppTheme, cx: &mut Context<
         )
         .child(
             Button::new("fmt-number")
+                .icon(IconName::ListOrdered)
                 .ghost()
                 .small()
-                .label("1.")
                 .tooltip("Numbered List (1. item)")
                 .on_click(cx.listener(|this, _, window, cx| {
                     this.insert_formatting("number", window, cx);
                 })),
         )
         .child(
-            Button::new("fmt-quote")
+            Button::new("fmt-task")
+                .icon(IconName::ListTodo)
                 .ghost()
                 .small()
-                .label("\"")
+                .tooltip("To-do (- [ ])")
+                .on_click(cx.listener(|this, _, window, cx| {
+                    this.insert_formatting("checklist", window, cx);
+                })),
+        )
+        .child(
+            Button::new("fmt-quote")
+                .icon(IconName::TextQuote)
+                .ghost()
+                .small()
                 .tooltip("Blockquote (> quote)")
                 .on_click(cx.listener(|this, _, window, cx| {
                     this.insert_formatting("quote", window, cx);
                 })),
         )
         .child(
-            Button::new("fmt-callout")
-                .icon(IconName::Info)
-                .ghost()
-                .small()
-                .tooltip("Callout Box (> [!NOTE])")
-                .on_click(cx.listener(|this, _, window, cx| {
-                    this.insert_formatting("callout", window, cx);
-                })),
-        )
-        .child(
             Button::new("fmt-code-block")
-                .icon(IconName::Copy)
+                .icon(IconName::SquareCode)
                 .ghost()
                 .small()
                 .tooltip("Code Block (```lang)")
@@ -270,9 +213,9 @@ pub fn render_formatting_strip(_this: &NotesApp, t: &AppTheme, cx: &mut Context<
         )
         .child(
             Button::new("fmt-divider")
+                .icon(IconName::Minus)
                 .ghost()
                 .small()
-                .label("—")
                 .tooltip("Divider (---)")
                 .on_click(cx.listener(|this, _, window, cx| {
                     this.insert_formatting("divider", window, cx);
@@ -285,12 +228,10 @@ pub fn render_editor_footer(
     t: &AppTheme,
     word_count: usize,
     char_count: usize,
-    cx: &mut Context<NotesApp>,
 ) -> impl IntoElement {
     div()
         .flex()
         .items_center()
-        .justify_between()
         .px_6()
         .py_2()
         .border_t_1()
@@ -312,47 +253,6 @@ pub fn render_editor_footer(
                         .text_xs()
                         .text_color(t.ink_muted)
                         .child(format!("{} chars", char_count)),
-                ),
-        )
-        .child(
-            div()
-                .flex()
-                .items_center()
-                .gap_1p5()
-                .child(
-                    Button::new("btn-footer-settings")
-                        .icon(IconName::Settings)
-                        .ghost()
-                        .small()
-                        .tooltip("App Settings")
-                        .on_click(cx.listener(|this, _, _, cx| {
-                            this.show_settings_modal = true;
-                            cx.notify();
-                        })),
-                )
-                .child(
-                    Button::new("btn-footer-update")
-                        .icon(IconName::RefreshCw)
-                        .ghost()
-                        .small()
-                        .tooltip("Check for Updates")
-                        .on_click(cx.listener(|this, _, _, cx| {
-                            this.show_update_modal = true;
-                            this.is_checking_update = false;
-                            this.update_checked = false;
-                            cx.notify();
-                        })),
-                )
-                .child(
-                    Button::new("btn-footer-add-task")
-                        .icon(IconName::Plus)
-                        .ghost()
-                        .small()
-                        .label("Task")
-                        .tooltip("Add Checklist Item")
-                        .on_click(cx.listener(|this, _, _, cx| {
-                            this.add_checklist_item(cx);
-                        })),
                 ),
         )
 }

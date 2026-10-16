@@ -34,9 +34,12 @@ pub fn show_and_focus_window(window: &gpui_kit::Window) {
                 BringWindowToTop(hwnd);
                 SetForegroundWindow(hwnd);
 
-                // Load and apply the app icon to the window and taskbar
-                let icon_path = std::path::Path::new("assests/app_icon.ico");
-                if icon_path.exists() {
+                // Load and apply the app icon to the window and taskbar.
+                // The .ico is embedded at compile time and materialized in
+                // the temp directory, since LoadImageW needs a file path.
+                let icon_path = std::env::temp_dir().join("notty-app-icon.ico");
+                let icon_bytes: &[u8] = include_bytes!("../../assets/app_icon.ico");
+                if std::fs::write(&icon_path, icon_bytes).is_ok() {
                     let path_wide: Vec<u16> = OsStr::new(icon_path)
                         .encode_wide()
                         .chain(std::iter::once(0))
@@ -54,14 +57,8 @@ pub fn show_and_focus_window(window: &gpui_kit::Window) {
                         SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon_big);
                     }
 
-                    let hicon_small = LoadImageW(
-                        0,
-                        path_wide.as_ptr(),
-                        IMAGE_ICON,
-                        16,
-                        16,
-                        LR_LOADFROMFILE,
-                    );
+                    let hicon_small =
+                        LoadImageW(0, path_wide.as_ptr(), IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
                     if hicon_small != 0 {
                         SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon_small);
                     }

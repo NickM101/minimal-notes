@@ -1,2 +1,6 @@
 /target
 notes_data/
+*.db
+*.db-shm
+*.db-wal
+Cargo.lock.bak

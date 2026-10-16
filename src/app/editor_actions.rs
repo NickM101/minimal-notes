@@ -1,7 +1,7 @@
-use gpui_kit::*;
 use crate::models::{ChecklistItem, VoiceRecording};
 use crate::this_save;
 use crate::NotesApp;
+use gpui_kit::*;
 
 impl NotesApp {
     pub fn toggle_checklist_item(&mut self, item_id: &str, cx: &mut Context<Self>) {
@@ -20,7 +20,7 @@ impl NotesApp {
     pub fn toggle_markdown_checkbox(
         &mut self,
         target_line_idx: usize,
-        window: &mut Window,
+        _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
         if let Some(id) = &self.selected_id {
@@ -37,12 +37,6 @@ impl NotesApp {
                 }
                 note.updated_at = chrono::Local::now();
                 let _ = this_save(note, &self.storage);
-                let body_str = note.plain_text();
-                self.is_syncing = true;
-                self.editor_state.update(cx, |s, cx| {
-                    s.set_value(&body_str, window, cx);
-                });
-                self.is_syncing = false;
                 cx.notify();
             }
         }
@@ -130,32 +124,59 @@ impl NotesApp {
 
     pub fn insert_formatting(&mut self, syntax: &str, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(id) = &self.selected_id {
-            if let Some(note) = self.notes.iter_mut().find(|n| n.id == *id) {
-                let new_block = match syntax {
-                    "h1" => crate::models::Block::new(crate::models::BlockKind::Heading { level: 1, text: "Heading 1".to_string() }),
-                    "h2" => crate::models::Block::new(crate::models::BlockKind::Heading { level: 2, text: "Heading 2".to_string() }),
-                    "h3" => crate::models::Block::new(crate::models::BlockKind::Heading { level: 3, text: "Heading 3".to_string() }),
-                    "bullet" => crate::models::Block::new(crate::models::BlockKind::Bullet { indent: 0, text: "Item point".to_string() }),
-                    "number" => crate::models::Block::new(crate::models::BlockKind::Numbered { indent: 0, text: "Step item".to_string() }),
-                    "quote" => crate::models::Block::new(crate::models::BlockKind::Quote { text: "Serenity in simplicity.".to_string() }),
-                    "code" => crate::models::Block::new(crate::models::BlockKind::Code { language: "rust".to_string(), text: "fn main() {\n    println!(\"Simplicity\");\n}".to_string() }),
-                    "checklist" => crate::models::Block::new(crate::models::BlockKind::Todo { checked: false, text: "New task item".to_string() }),
-                    "divider" => crate::models::Block::new(crate::models::BlockKind::Divider),
-                    _ => crate::models::Block::new(crate::models::BlockKind::Paragraph { text: "New text".to_string() }),
-                };
-                note.blocks.push(new_block);
-                note.updated_at = chrono::Local::now();
-                let _ = this_save(note, &self.storage);
-                let body_str = note.plain_text();
-                self.is_syncing = true;
-                self.editor_state.update(cx, |s, cx| {
-                    s.set_value(&body_str, window, cx);
-                });
-                self.is_syncing = false;
-                cx.notify();
-            }
+            let after_idx = if let Some(note) = self.notes.iter().find(|n| n.id == *id) {
+                self.focused_block_id
+                    .as_deref()
+                    .and_then(|fid| note.blocks.iter().position(|b| b.id == fid))
+            } else {
+                return;
+            };
+
+            let kind = match syntax {
+                "h1" => crate::models::BlockKind::Heading {
+                    level: 1,
+                    text: String::new(),
+                },
+                "h2" => crate::models::BlockKind::Heading {
+                    level: 2,
+                    text: String::new(),
+                },
+                "h3" => crate::models::BlockKind::Heading {
+                    level: 3,
+                    text: String::new(),
+                },
+                "bullet" => crate::models::BlockKind::Bullet {
+                    indent: 0,
+                    text: String::new(),
+                },
+                "number" => crate::models::BlockKind::Numbered {
+                    indent: 0,
+                    text: String::new(),
+                },
+                "quote" => crate::models::BlockKind::Quote {
+                    text: String::new(),
+                },
+                "code" => crate::models::BlockKind::Code {
+                    language: "rust".to_string(),
+                    text: String::new(),
+                },
+                "checklist" => crate::models::BlockKind::Todo {
+                    checked: false,
+                    text: String::new(),
+                },
+                "divider" => crate::models::BlockKind::Divider,
+                _ => crate::models::BlockKind::Paragraph {
+                    text: String::new(),
+                },
+            };
+
+            // The reducer inserts after `after_idx` (or appends when None) and
+            // the FocusBlock effect focuses the new block.
+            self.dispatch(
+                crate::app::editor_reducer::EditorAction::InsertBlock { after_idx, kind },
+                window,
+                cx,
+            );
         }
     }
-
-
 }

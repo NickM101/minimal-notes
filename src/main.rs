@@ -11,15 +11,15 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use gpui_kit::component::{
-    input::{EditorState, InputEvent, InputState},
-    theme::{Theme, ThemeMode}, TitleBar,
+    input::{InputEvent, InputState},
+    theme::{Theme, ThemeMode},
+    TitleBar,
 };
 use gpui_kit::prelude::FluentBuilder;
 use gpui_kit::*;
 use models::Note;
 use storage::Storage;
 use theme::{AppTheme, CurrentScreen};
-
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BrowseLayout {
@@ -46,15 +46,16 @@ pub struct NotesApp {
 
     search_state: Entity<InputState>,
     title_state: Entity<InputState>,
-    editor_state: Entity<EditorState>,
-    block_input_states: Vec<(String, Entity<InputState>)>,
-    _block_subscriptions: Vec<Subscription>,
+    block_input_states: Vec<app::blocks::BlockInputHandle>,
     slash_menu_target: Option<(String, String)>, // (block_id, filter_query)
+    slash_menu_selection: Option<usize>,         // keyboard-selected item index in slash menu
     hovered_block_id: Option<String>,
+    focused_block_id: Option<String>, // which block currently has keyboard focus
 
-    // Cached asset data
-    lamp_svg_data: Option<Arc<[u8]>>,
-    logo_png_path: Option<std::path::PathBuf>,
+    // Embedded assets (compile-time): the binary is self-contained and
+    // never depends on the working directory.
+    lamp_svg_data: Arc<[u8]>,
+    logo_png: Option<Arc<Image>>,
 
     // Auth & User Profile State
     show_auth_modal: bool,
@@ -78,7 +79,6 @@ pub struct NotesApp {
     _subscriptions: Vec<Subscription>,
 }
 
-
 impl NotesApp {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let storage = Storage::new();
@@ -86,46 +86,33 @@ impl NotesApp {
         let selected_id = notes.first().map(|n| n.id.clone());
 
         let initial_title = notes.first().map(|n| n.title.clone()).unwrap_or_default();
-        let initial_body = notes.first().map(|n| n.plain_text()).unwrap_or_default();
 
-        let search_state = cx.new(|cx| {
-            InputState::new(window, cx).placeholder("Search notes...")
-        });
+        let search_state = cx.new(|cx| InputState::new(window, cx).placeholder("Search notes..."));
 
-        let title_state = cx.new(|cx| {
-            InputState::new(window, cx).placeholder("Title...")
-        });
-
-        let editor_state = cx.new(|cx| {
-            EditorState::new(window, cx)
-                .placeholder("Start writing or use Markdown formatting (## Heading, - [ ] Checklist, > Quote)...")
-                .language("markdown")
-                .line_number(true)
-                .folding(true)
-        });
+        let title_state = cx.new(|cx| InputState::new(window, cx).placeholder("Title..."));
 
         title_state.update(cx, |s, cx| {
             s.set_value(&initial_title, window, cx);
         });
-        editor_state.update(cx, |s, cx| {
-            s.set_value(&initial_body, window, cx);
-        });
 
         let mut subscriptions = Vec::new();
 
-        subscriptions.push(cx.subscribe_in(&search_state, window, |this, state, event, _, cx| {
-            if matches!(event, InputEvent::Change) {
-                this.search_query = state.read(cx).value().to_string().to_lowercase();
-                cx.notify();
-            }
-        }));
+        subscriptions.push(
+            cx.subscribe_in(&search_state, window, |this, state, event, _, cx| {
+                if matches!(event, InputEvent::Change) {
+                    this.search_query = state.read(cx).value().to_string().to_lowercase();
+                    cx.notify();
+                }
+            }),
+        );
 
-        subscriptions.push(cx.subscribe_in(&title_state, window, |this, state, event, _, cx| {
-            if this.is_syncing {
-                return;
-            }
-            if matches!(event, InputEvent::Change) {
-                let new_title = state.read(cx).value().to_string();
+        subscriptions.push(
+            cx.subscribe_in(&title_state, window, |this, state, event, _, cx| {
+                if this.is_syncing {
+                    return;
+                }
+                if matches!(event, InputEvent::Change) {
+                    let new_title = state.read(cx).value().to_string();
                     if let Some(id) = &this.selected_id {
                         if let Some(note) = this.notes.iter_mut().find(|n| n.id == *id) {
                             note.title = new_title;
@@ -134,37 +121,17 @@ impl NotesApp {
                             cx.notify();
                         }
                     }
-            }
-        }));
-
-        subscriptions.push(cx.subscribe_in(&editor_state, window, |this, state, event, _, cx| {
-            if this.is_syncing {
-                return;
-            }
-            if matches!(event, InputEvent::Change) {
-                let new_body = state.read(cx).value().to_string();
-                if let Some(id) = &this.selected_id {
-                    if let Some(note) = this.notes.iter_mut().find(|n| n.id == *id) {
-                        note.blocks = Note::markdown_to_blocks(&new_body);
-                        note.updated_at = chrono::Local::now();
-                        let _ = this.storage.save(note);
-                        cx.notify();
-                    }
                 }
-            }
-        }));
+            }),
+        );
 
-        // Load assets safely
-        let lamp_svg_data = std::fs::read("assests/zen_lamp.svg")
-            .ok()
-            .map(Arc::from);
-
-        let logo_path = std::path::Path::new("assests/zen_note_logo.png");
-        let logo_png_path = if logo_path.exists() {
-            std::fs::canonicalize(logo_path).ok()
-        } else {
-            None
-        };
+        // Assets are embedded at compile time — nothing is read from disk.
+        let lamp_svg_data: Arc<[u8]> =
+            Arc::from(include_bytes!("../assets/zen_lamp.svg").as_slice());
+        let logo_png = Image::from_bytes(
+            ImageFormat::Png,
+            include_bytes!("../assets/zen_note_logo.png").to_vec(),
+        );
 
         let mut app = Self {
             storage,
@@ -182,13 +149,13 @@ impl NotesApp {
             _save_task: None,
             search_state,
             title_state,
-            editor_state,
             block_input_states: Vec::new(),
-            _block_subscriptions: Vec::new(),
             slash_menu_target: None,
+            slash_menu_selection: None,
             hovered_block_id: None,
+            focused_block_id: None,
             lamp_svg_data,
-            logo_png_path,
+            logo_png: Some(Arc::new(logo_png)),
             show_auth_modal: false,
             is_signed_in: false,
             user_name: "Nick M.".to_string(),
@@ -203,7 +170,7 @@ impl NotesApp {
             _subscriptions: subscriptions,
         };
 
-        app.sync_block_inputs(window, cx);
+        app.reconcile_block_inputs(window, cx);
         app
     }
 
@@ -222,21 +189,18 @@ impl NotesApp {
         cx.notify();
     }
 
-
     fn selected_note(&self) -> Option<&Note> {
         let id = self.selected_id.as_ref()?;
         self.notes.iter().find(|n| &n.id == id)
     }
 
     fn render_logo(&self, t: &AppTheme) -> impl IntoElement {
-        components::branding::render_logo(t, self.logo_png_path.as_ref())
+        components::branding::render_logo(t, self.logo_png.as_ref())
     }
 
     fn render_zen_lamp(&self, t: &AppTheme) -> impl IntoElement {
-        components::branding::render_zen_lamp(t, self.lamp_svg_data.as_ref())
+        components::branding::render_zen_lamp(t, &self.lamp_svg_data)
     }
-
-
 }
 
 pub(crate) fn this_save(note: &Note, storage: &Storage) -> std::io::Result<()> {
@@ -283,42 +247,36 @@ impl Render for NotesApp {
 }
 
 fn main() {
-    application()
-        .with_assets(assets::AllAssets)
-        .run(|cx| {
-            init(cx);
+    application().with_assets(assets::AllAssets).run(|cx| {
+        init(cx);
 
-            let mut window_options = TitleBar::window_options();
-            // Modern desktop rectangular proportion (width calibrated to fit 4 cards across in browse grid)
-            window_options.window_bounds = Some(WindowBounds::Windowed(Bounds::centered(
-                None,
-                size(px(1100.0), px(700.0)),
-                cx,
-            )));
-            window_options.window_min_size = Some(size(px(720.0), px(500.0)));
-            window_options.focus = true;
-            window_options.show = true;
+        let mut window_options = TitleBar::window_options();
+        // Modern desktop rectangular proportion (width calibrated to fit 4 cards across in browse grid)
+        window_options.window_bounds = Some(WindowBounds::Windowed(Bounds::centered(
+            None,
+            size(px(1100.0), px(700.0)),
+            cx,
+        )));
+        window_options.window_min_size = Some(size(px(720.0), px(500.0)));
+        window_options.focus = true;
+        window_options.show = true;
 
-            let (handle, _) = open_window(
-                window_options,
-                cx,
-                |window, cx| {
-                    #[cfg(target_os = "windows")]
-                    platform::win32::show_and_focus_window(window);
-
-                    window.activate_window();
-                    cx.new(|cx| NotesApp::new(window, cx))
-                },
-            )
-            .expect("Failed to open window");
-
+        let (_handle, _) = open_window(window_options, cx, |window, cx| {
             #[cfg(target_os = "windows")]
-            handle
-                .update(cx, |_, window, _| {
-                    platform::win32::show_and_focus_window(window);
-                })
-                .ok();
+            platform::win32::show_and_focus_window(window);
 
-            cx.activate(true);
-        });
+            window.activate_window();
+            cx.new(|cx| NotesApp::new(window, cx))
+        })
+        .expect("Failed to open window");
+
+        #[cfg(target_os = "windows")]
+        _handle
+            .update(cx, |_, window, _| {
+                platform::win32::show_and_focus_window(window);
+            })
+            .ok();
+
+        cx.activate(true);
+    });
 }

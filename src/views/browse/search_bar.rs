@@ -1,10 +1,18 @@
-use gpui_kit::*;
-use gpui_kit::component::{button::{Button, ButtonVariants}, input::Input, Icon, IconName, Sizable};
-use gpui_kit::prelude::FluentBuilder;
 use crate::theme::AppTheme;
 use crate::NotesApp;
+use gpui_kit::component::{
+    button::{Button, ButtonVariants},
+    input::Input,
+    Icon, IconName, Sizable,
+};
+use gpui_kit::prelude::FluentBuilder;
+use gpui_kit::*;
 
-pub fn render_search_bar(this: &NotesApp, t: &AppTheme, cx: &mut Context<NotesApp>) -> impl IntoElement {
+pub fn render_search_bar(
+    this: &NotesApp,
+    t: &AppTheme,
+    cx: &mut Context<NotesApp>,
+) -> impl IntoElement {
     div()
         .flex_shrink_0()
         .flex()

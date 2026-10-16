@@ -1,5 +1,5 @@
-use gpui_kit::*;
 use crate::theme::AppTheme;
+use gpui_kit::*;
 
 pub fn modal_dialog<F>(
     id: &'static str,

@@ -1,17 +1,26 @@
-use std::time::Instant;
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
-use gpui_kit::component::{button::{Button, ButtonVariants}, Icon, IconName, Sizable};
 use crate::theme::AppTheme;
 use crate::NotesApp;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{
+    button::{Button, ButtonVariants},
+    Icon, IconName, Sizable,
+};
+use gpui_kit::*;
+use std::time::Instant;
 
 impl NotesApp {
-    pub(crate) fn render_settings_modal(&self, t: &AppTheme, cx: &mut Context<Self>) -> impl IntoElement {
+    pub(crate) fn render_settings_modal(
+        &self,
+        t: &AppTheme,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
         let auto_save = self.auto_save_interval_sec;
         let font_size_idx = self.font_size_idx;
         let is_dark = self.is_dark_mode;
         let font_size_labels = ["Compact (13px)", "Balanced (15px)", "Relaxed (18px)"];
-        let current_font_label = font_size_labels.get(font_size_idx).unwrap_or(&"Balanced (15px)");
+        let current_font_label = font_size_labels
+            .get(font_size_idx)
+            .unwrap_or(&"Balanced (15px)");
 
         div()
             .id("settings-modal-backdrop")
@@ -102,16 +111,21 @@ impl NotesApp {
                                                     .text_color(t.ink)
                                                     .child("Appearance"),
                                             )
-                                            .child(
-                                                div()
-                                                    .text_xs()
-                                                    .text_color(t.ink_muted)
-                                                    .child(if is_dark { "Dark Minimal (#000)" } else { "Old Paper Warmth" }),
-                                            ),
+                                            .child(div().text_xs().text_color(t.ink_muted).child(
+                                                if is_dark {
+                                                    "Dark Minimal (#000)"
+                                                } else {
+                                                    "Old Paper Warmth"
+                                                },
+                                            )),
                                     )
                                     .child(
                                         Button::new("btn-settings-toggle-theme")
-                                            .icon(if is_dark { IconName::Sun } else { IconName::Moon })
+                                            .icon(if is_dark {
+                                                IconName::Sun
+                                            } else {
+                                                IconName::Moon
+                                            })
                                             .ghost()
                                             .small()
                                             .label(if is_dark { "Light" } else { "Dark" })
@@ -142,12 +156,9 @@ impl NotesApp {
                                                     .text_color(t.ink)
                                                     .child("Auto-Save Delay"),
                                             )
-                                            .child(
-                                                div()
-                                                    .text_xs()
-                                                    .text_color(t.ink_muted)
-                                                    .child(format!("Debounce interval: {}s", auto_save)),
-                                            ),
+                                            .child(div().text_xs().text_color(t.ink_muted).child(
+                                                format!("Debounce interval: {}s", auto_save),
+                                            )),
                                     )
                                     .child(
                                         div()
@@ -161,7 +172,10 @@ impl NotesApp {
                                                     .label("1s")
                                                     .on_click(cx.listener(|this, _, _, cx| {
                                                         this.auto_save_interval_sec = 1;
-                                                        this.status_message = Some(("Saved 1s delay".to_string(), Instant::now()));
+                                                        this.status_message = Some((
+                                                            "Saved 1s delay".to_string(),
+                                                            Instant::now(),
+                                                        ));
                                                         cx.notify();
                                                     })),
                                             )
@@ -172,7 +186,10 @@ impl NotesApp {
                                                     .label("2s")
                                                     .on_click(cx.listener(|this, _, _, cx| {
                                                         this.auto_save_interval_sec = 2;
-                                                        this.status_message = Some(("Saved 2s delay".to_string(), Instant::now()));
+                                                        this.status_message = Some((
+                                                            "Saved 2s delay".to_string(),
+                                                            Instant::now(),
+                                                        ));
                                                         cx.notify();
                                                     })),
                                             )
@@ -183,7 +200,10 @@ impl NotesApp {
                                                     .label("5s")
                                                     .on_click(cx.listener(|this, _, _, cx| {
                                                         this.auto_save_interval_sec = 5;
-                                                        this.status_message = Some(("Saved 5s delay".to_string(), Instant::now()));
+                                                        this.status_message = Some((
+                                                            "Saved 5s delay".to_string(),
+                                                            Instant::now(),
+                                                        ));
                                                         cx.notify();
                                                     })),
                                             ),
@@ -225,7 +245,10 @@ impl NotesApp {
                                             .label("Cycle Size")
                                             .on_click(cx.listener(|this, _, _, cx| {
                                                 this.font_size_idx = (this.font_size_idx + 1) % 3;
-                                                this.status_message = Some(("Typography adjusted".to_string(), Instant::now()));
+                                                this.status_message = Some((
+                                                    "Typography adjusted".to_string(),
+                                                    Instant::now(),
+                                                ));
                                                 cx.notify();
                                             })),
                                     ),
@@ -248,12 +271,9 @@ impl NotesApp {
                                             .text_color(t.ink)
                                             .child("Storage Location"),
                                     )
-                                    .child(
-                                        div()
-                                            .text_xs()
-                                            .text_color(t.ink_muted)
-                                            .child("Local Disk: ./notes_data/*.json (encrypted/persistent)"),
-                                    ),
+                                    .child(div().text_xs().text_color(t.ink_muted).child(
+                                        "Local Disk: ./notes_data/*.json (encrypted/persistent)",
+                                    )),
                             ),
                     )
                     // Footer Action
@@ -279,7 +299,4 @@ impl NotesApp {
                     ),
             )
     }
-
-
 }
-

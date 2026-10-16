@@ -1,11 +1,18 @@
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
-use gpui_kit::component::{button::{Button, ButtonVariants}, IconName, Sizable};
 use crate::theme::AppTheme;
 use crate::NotesApp;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{
+    button::{Button, ButtonVariants},
+    IconName, Sizable,
+};
+use gpui_kit::*;
 
 impl NotesApp {
-    pub(crate) fn render_notion_empty_starter(&self, t: &AppTheme, cx: &mut Context<Self>) -> impl IntoElement {
+    pub(crate) fn render_notion_empty_starter(
+        &self,
+        t: &AppTheme,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
         div()
             .flex()
             .flex_col()
@@ -26,13 +33,9 @@ impl NotesApp {
                     .mb_1()
                     .child("Notty — Live Visual Canvas"),
             )
-            .child(
-                div()
-                    .text_xs()
-                    .text_color(t.ink_muted)
-                    .mb_5()
-                    .child("Type freely, switch to Source mode, or pick a Notion-style block to begin:"),
-            )
+            .child(div().text_xs().text_color(t.ink_muted).mb_5().child(
+                "Type freely, switch to Source mode, or pick a Notion-style block to begin:",
+            ))
             .child(
                 div()
                     .flex()
@@ -90,6 +93,4 @@ impl NotesApp {
                     ),
             )
     }
-
-
 }

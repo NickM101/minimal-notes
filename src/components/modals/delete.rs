@@ -1,9 +1,9 @@
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
-use gpui_kit::component::{Icon, IconName};
 use crate::components::modals::dialog::modal_dialog;
 use crate::theme::AppTheme;
 use crate::NotesApp;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{Icon, IconName};
+use gpui_kit::*;
 
 impl NotesApp {
     pub(crate) fn render_delete_modal(&self, t: &AppTheme, cx: &mut Context<Self>) -> AnyElement {

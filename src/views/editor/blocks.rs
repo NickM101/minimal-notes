@@ -1,12 +1,15 @@
-use std::time::Instant;
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
-use gpui_kit::component::{button::{Button, ButtonVariants}, Icon, IconName, Sizable};
-use gpui_kit::prelude::FluentBuilder;
 use crate::markdown::{parse_markdown_blocks, MarkdownBlock};
 use crate::theme::{AppTheme, LIGHT_INK};
 use crate::views::editor::inline::render_inline_spans;
 use crate::NotesApp;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{
+    button::{Button, ButtonVariants},
+    Icon, IconName, Sizable,
+};
+use gpui_kit::prelude::FluentBuilder;
+use gpui_kit::*;
+use std::time::Instant;
 
 impl NotesApp {
     #[allow(dead_code)]
@@ -25,9 +28,7 @@ impl NotesApp {
             .py_2()
             .children(blocks.into_iter().enumerate().map(|(idx, block)| {
                 match block {
-                    MarkdownBlock::Blank => {
-                        div().h(px(8.0)).into_any_element()
-                    }
+                    MarkdownBlock::Blank => div().h(px(8.0)).into_any_element(),
                     MarkdownBlock::Heading(level, text) => {
                         let text_clone = text.clone();
                         match level {
@@ -93,9 +94,7 @@ impl NotesApp {
                                     }))
                                     .when(is_checked_val, |this| {
                                         this.child(
-                                            Icon::new(IconName::Check)
-                                                .size_3()
-                                                .text_color(t.bg),
+                                            Icon::new(IconName::Check).size_3().text_color(t.bg),
                                         )
                                     }),
                             )
@@ -117,14 +116,7 @@ impl NotesApp {
                             .items_start()
                             .gap_2p5()
                             .my_0p5()
-                            .child(
-                                div()
-                                    .w(px(6.0))
-                                    .h(px(6.0))
-                                    .mt_2()
-                                    .rounded_full()
-                                    .bg(t.ink),
-                            )
+                            .child(div().w(px(6.0)).h(px(6.0)).mt_2().rounded_full().bg(t.ink))
                             .child(
                                 div()
                                     .flex_1()
@@ -202,7 +194,9 @@ impl NotesApp {
                                     .flex()
                                     .items_center()
                                     .justify_center()
-                                    .child(Icon::new(IconName::Info).size_3().text_color(LIGHT_INK)),
+                                    .child(
+                                        Icon::new(IconName::Info).size_3().text_color(LIGHT_INK),
+                                    ),
                             )
                             .child(
                                 div()
@@ -268,55 +262,63 @@ impl NotesApp {
                                             ),
                                     )
                                     .child(
-                                        Button::new(SharedString::from(format!("btn-copy-code-{}", idx)))
-                                            .icon(IconName::Copy)
-                                            .ghost()
-                                            .small()
-                                            .label("Copy")
-                                            .tooltip("Copy snippet to clipboard")
-                                            .on_click(cx.listener(move |this, _, _, cx| {
-                                                cx.write_to_clipboard(ClipboardItem::new_string(code_clone.clone()));
-                                                this.status_message = Some(("Code copied!".to_string(), Instant::now()));
+                                        Button::new(SharedString::from(format!(
+                                            "btn-copy-code-{}",
+                                            idx
+                                        )))
+                                        .icon(IconName::Copy)
+                                        .ghost()
+                                        .small()
+                                        .label("Copy")
+                                        .tooltip("Copy snippet to clipboard")
+                                        .on_click(
+                                            cx.listener(move |this, _, _, cx| {
+                                                cx.write_to_clipboard(ClipboardItem::new_string(
+                                                    code_clone.clone(),
+                                                ));
+                                                this.status_message = Some((
+                                                    "Code copied!".to_string(),
+                                                    Instant::now(),
+                                                ));
                                                 cx.notify();
-                                            })),
+                                            }),
+                                        ),
                                     ),
                             )
                             .child(
                                 div()
                                     .p_3()
                                     .overflow_hidden()
-                                    .font_family(SharedString::from("Consolas, Courier New, monospace"))
+                                    .font_family(SharedString::from(
+                                        "Consolas, Courier New, monospace",
+                                    ))
                                     .text_xs()
                                     .line_height(relative(1.5))
                                     .text_color(t.ink)
-                                    .children(code.lines().enumerate().map(|(line_num, line_str)| {
-                                        div()
-                                            .flex()
-                                            .gap_3()
-                                            .child(
-                                                div()
-                                                    .w(px(24.0))
-                                                    .text_right()
-                                                    .text_color(t.ink_faint)
-                                                    .child((line_num + 1).to_string()),
-                                            )
-                                            .child(
-                                                div()
-                                                    .flex_1()
-                                                    .child(line_str.to_string()),
-                                            )
-                                    }))
+                                    .children(code.lines().enumerate().map(
+                                        |(line_num, line_str)| {
+                                            div()
+                                                .flex()
+                                                .gap_3()
+                                                .child(
+                                                    div()
+                                                        .w(px(24.0))
+                                                        .text_right()
+                                                        .text_color(t.ink_faint)
+                                                        .child((line_num + 1).to_string()),
+                                                )
+                                                .child(div().flex_1().child(line_str.to_string()))
+                                        },
+                                    )),
                             )
                             .into_any_element()
                     }
-                    MarkdownBlock::Divider => {
-                        div()
-                            .my_4()
-                            .h_px()
-                            .w_full()
-                            .bg(t.ink_faint)
-                            .into_any_element()
-                    }
+                    MarkdownBlock::Divider => div()
+                        .my_4()
+                        .h_px()
+                        .w_full()
+                        .bg(t.ink_faint)
+                        .into_any_element(),
                     MarkdownBlock::Paragraph(text) => {
                         let text_clone = text.clone();
                         div()
@@ -330,6 +332,4 @@ impl NotesApp {
                 }
             }))
     }
-
-
 }

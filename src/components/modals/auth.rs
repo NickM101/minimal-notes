@@ -1,11 +1,15 @@
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
-use gpui_kit::component::{Icon, IconName};
 use crate::theme::AppTheme;
 use crate::NotesApp;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{Icon, IconName};
+use gpui_kit::*;
 
 impl NotesApp {
-    pub(crate) fn render_auth_modal(&self, t: &AppTheme, cx: &mut Context<Self>) -> impl IntoElement {
+    pub(crate) fn render_auth_modal(
+        &self,
+        t: &AppTheme,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
         let is_signed = self.is_signed_in;
         let user_name = self.user_name.clone();
         let user_email = self.user_email.clone();
@@ -283,6 +287,4 @@ impl NotesApp {
                     }),
             )
     }
-
-
 }

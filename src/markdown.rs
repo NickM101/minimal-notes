@@ -117,7 +117,11 @@ pub fn parse_markdown_blocks(content: &str) -> Vec<MarkdownBlock> {
                 i += 1;
             }
             blocks.push(MarkdownBlock::CodeBlock {
-                language: if lang.is_empty() { "code".to_string() } else { lang },
+                language: if lang.is_empty() {
+                    "code".to_string()
+                } else {
+                    lang
+                },
                 code: code_lines.join("\n"),
             });
             continue;
@@ -155,7 +159,10 @@ pub fn parse_markdown_blocks(content: &str) -> Vec<MarkdownBlock> {
         }
 
         // 5. Checklist Task: - [ ] or - [x] or - [X]
-        if trimmed.starts_with("- [ ] ") || trimmed.starts_with("- [x] ") || trimmed.starts_with("- [X] ") {
+        if trimmed.starts_with("- [ ] ")
+            || trimmed.starts_with("- [x] ")
+            || trimmed.starts_with("- [X] ")
+        {
             let is_checked = trimmed.starts_with("- [x] ") || trimmed.starts_with("- [X] ");
             let text = trimmed[6..].to_string();
             blocks.push(MarkdownBlock::Checklist {
@@ -183,7 +190,11 @@ pub fn parse_markdown_blocks(content: &str) -> Vec<MarkdownBlock> {
                 continue;
             }
         }
-        if trimmed.starts_with("💡") || trimmed.starts_with("⚠️") || trimmed.starts_with("ℹ️") || trimmed.starts_with("📌") {
+        if trimmed.starts_with("💡")
+            || trimmed.starts_with("⚠️")
+            || trimmed.starts_with("ℹ️")
+            || trimmed.starts_with("📌")
+        {
             let icon_len = trimmed.chars().next().map(|c| c.len_utf8()).unwrap_or(0);
             let text = trimmed[icon_len..].trim().to_string();
             blocks.push(MarkdownBlock::Callout {
@@ -218,7 +229,8 @@ pub fn parse_markdown_blocks(content: &str) -> Vec<MarkdownBlock> {
 
         // 9. Numbered List: e.g. "1. " or "2. "
         if let Some(dot_idx) = trimmed.find(". ") {
-            if dot_idx > 0 && dot_idx <= 4 && trimmed[..dot_idx].chars().all(|c| c.is_ascii_digit()) {
+            if dot_idx > 0 && dot_idx <= 4 && trimmed[..dot_idx].chars().all(|c| c.is_ascii_digit())
+            {
                 let num = trimmed[..=dot_idx].to_string();
                 let text = trimmed[dot_idx + 2..].trim().to_string();
                 blocks.push(MarkdownBlock::Numbered(num, text));

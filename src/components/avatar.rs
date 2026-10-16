@@ -1,7 +1,7 @@
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
 use crate::theme::{AppTheme, AVATAR_ICON_SVG};
 use crate::NotesApp;
+use gpui_kit::base::StyledExt;
+use gpui_kit::*;
 
 impl NotesApp {
     pub(crate) fn render_avatar_button(&self, t: &AppTheme, cx: &mut Context<Self>) -> AnyElement {

@@ -2,11 +2,11 @@ pub mod dock;
 pub mod nav;
 pub mod search_bar;
 
-use gpui_kit::*;
-use gpui_kit::component::{Icon, IconName};
-use gpui_kit::prelude::FluentBuilder;
 use crate::models::Note;
 use crate::{BrowseLayout, NotesApp};
+use gpui_kit::component::{Icon, IconName};
+use gpui_kit::prelude::FluentBuilder;
+use gpui_kit::*;
 
 impl NotesApp {
     pub(crate) fn render_browse(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -57,7 +57,11 @@ impl NotesApp {
                                 .justify_center()
                                 .py_20()
                                 .gap_2()
-                                .child(Icon::new(IconName::FileText).size_8().text_color(t.ink_muted))
+                                .child(
+                                    Icon::new(IconName::FileText)
+                                        .size_8()
+                                        .text_color(t.ink_muted),
+                                )
                                 .child(
                                     div()
                                         .text_sm()
@@ -69,37 +73,43 @@ impl NotesApp {
                     .when(!filtered_notes.is_empty(), |this| {
                         match self.browse_layout {
                             // ─── LIST VIEW ───
-                            BrowseLayout::List => {
-                                this.child(
-                                    div()
-                                        .id("browse-notes-list")
-                                        .flex()
-                                        .flex_col()
-                                        .pb_4()
-                                        .children(filtered_notes.iter().map(|note| {
-                                            self.render_note_list_item(note, &t, cx)
-                                        })),
-                                )
-                            }
+                            BrowseLayout::List => this.child(
+                                div()
+                                    .id("browse-notes-list")
+                                    .flex()
+                                    .flex_col()
+                                    .pb_4()
+                                    .children(
+                                        filtered_notes
+                                            .iter()
+                                            .map(|note| self.render_note_list_item(note, &t, cx)),
+                                    ),
+                            ),
                             // ─── GRID VIEW (CARDS) ───
-                            BrowseLayout::Grid => {
-                                this.child(
-                                    div()
-                                        .id("browse-notes-grid")
-                                        .flex()
-                                        .flex_wrap()
-                                        .gap_4()
-                                        .p_6()
-                                        .pb_16()
-                                        .children(filtered_notes.iter().map(|note| {
-                                            self.render_note_card(note, &t, cx)
-                                        })),
-                                )
-                            }
+                            BrowseLayout::Grid => this.child(
+                                div()
+                                    .id("browse-notes-grid")
+                                    .flex()
+                                    .flex_wrap()
+                                    .gap_4()
+                                    .p_6()
+                                    .pb_16()
+                                    .children(
+                                        filtered_notes
+                                            .iter()
+                                            .map(|note| self.render_note_card(note, &t, cx)),
+                                    ),
+                            ),
                         }
                     }),
             )
             // Bottom Action Dock
-            .child(dock::render_bottom_dock(self, filtered_count, self.notes.len(), &t, cx))
+            .child(dock::render_bottom_dock(
+                self,
+                filtered_count,
+                self.notes.len(),
+                &t,
+                cx,
+            ))
     }
 }

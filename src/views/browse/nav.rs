@@ -1,11 +1,18 @@
-use gpui_kit::assets::IconName as FullIconName;
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
-use gpui_kit::component::{button::{Button, ButtonVariants}, Icon, IconName};
 use crate::theme::{AppTheme, CurrentScreen};
 use crate::{BrowseLayout, NotesApp};
+use gpui_kit::assets::IconName as FullIconName;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{
+    button::{Button, ButtonVariants},
+    Icon, IconName,
+};
+use gpui_kit::*;
 
-pub fn render_browse_nav(this: &NotesApp, t: &AppTheme, cx: &mut Context<NotesApp>) -> impl IntoElement {
+pub fn render_browse_nav(
+    this: &NotesApp,
+    t: &AppTheme,
+    cx: &mut Context<NotesApp>,
+) -> impl IntoElement {
     div()
         .flex_shrink_0()
         .flex()
@@ -33,12 +40,7 @@ pub fn render_browse_nav(this: &NotesApp, t: &AppTheme, cx: &mut Context<NotesAp
                     cx.notify();
                 }))
                 .child(Icon::new(IconName::ChevronLeft).size_4())
-                .child(
-                    div()
-                        .text_sm()
-                        .font_medium()
-                        .child("Back to Home"),
-                ),
+                .child(div().text_sm().font_medium().child("Back to Home")),
         )
         .child(
             div()
@@ -50,7 +52,11 @@ pub fn render_browse_nav(this: &NotesApp, t: &AppTheme, cx: &mut Context<NotesAp
                     Button::new("btn-browse-search-toggle")
                         .icon(IconName::Search)
                         .ghost()
-                        .tooltip(if this.browse_search_open { "Hide search" } else { "Search notes" })
+                        .tooltip(if this.browse_search_open {
+                            "Hide search"
+                        } else {
+                            "Search notes"
+                        })
                         .on_click(cx.listener(|this, _, _, cx| {
                             this.browse_search_open = !this.browse_search_open;
                             cx.notify();

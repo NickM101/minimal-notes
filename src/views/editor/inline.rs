@@ -1,20 +1,32 @@
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
 use crate::markdown::{parse_inline_tokens, InlineTok};
 use crate::theme::{AppTheme, LIGHT_INK};
+use gpui_kit::base::StyledExt;
+use gpui_kit::*;
 
 pub fn render_inline_spans(text: &str, t: &AppTheme) -> impl IntoElement {
-        let tokens = parse_inline_tokens(text);
-        div()
-            .flex()
-            .flex_wrap()
-            .items_baseline()
-            .gap_x_1()
-            .gap_y_0p5()
-            .children(tokens.into_iter().map(|tok| match tok {
-                InlineTok::Plain(s) => div().text_color(t.ink).child(s.to_string()).into_any_element(),
-                InlineTok::Bold(s) => div().font_bold().text_color(t.ink).child(s.to_string()).into_any_element(),
-                InlineTok::Italic(s) => div().italic().text_color(t.ink).child(s.to_string()).into_any_element(),
+    let tokens = parse_inline_tokens(text);
+    div()
+        .flex()
+        .flex_wrap()
+        .items_baseline()
+        .gap_x_1()
+        .gap_y_0p5()
+        .children(tokens.into_iter().map(|tok| {
+            match tok {
+                InlineTok::Plain(s) => div()
+                    .text_color(t.ink)
+                    .child(s.to_string())
+                    .into_any_element(),
+                InlineTok::Bold(s) => div()
+                    .font_bold()
+                    .text_color(t.ink)
+                    .child(s.to_string())
+                    .into_any_element(),
+                InlineTok::Italic(s) => div()
+                    .italic()
+                    .text_color(t.ink)
+                    .child(s.to_string())
+                    .into_any_element(),
                 InlineTok::Highlight(s) => div()
                     .bg(t.highlight)
                     .px_1()
@@ -42,7 +54,6 @@ pub fn render_inline_spans(text: &str, t: &AppTheme) -> impl IntoElement {
                     .text_color(t.ink)
                     .child(s.to_string())
                     .into_any_element(),
-            }))
-    }
-
-
+            }
+        }))
+}

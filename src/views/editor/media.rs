@@ -1,9 +1,12 @@
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
-use gpui_kit::component::{button::{Button, ButtonVariants}, Icon, IconName, Sizable};
 use crate::models::VoiceRecording;
 use crate::theme::AppTheme;
 use crate::NotesApp;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{
+    button::{Button, ButtonVariants},
+    Icon, IconName, Sizable,
+};
+use gpui_kit::*;
 
 pub fn render_image_attachment(t: &AppTheme) -> impl IntoElement {
     div()
@@ -41,7 +44,11 @@ pub fn render_image_attachment(t: &AppTheme) -> impl IntoElement {
         )
 }
 
-pub fn render_voice_player(voice: &VoiceRecording, t: &AppTheme, cx: &mut Context<NotesApp>) -> impl IntoElement {
+pub fn render_voice_player(
+    voice: &VoiceRecording,
+    t: &AppTheme,
+    cx: &mut Context<NotesApp>,
+) -> impl IntoElement {
     let is_playing = voice.is_playing;
 
     div()
@@ -62,22 +69,16 @@ pub fn render_voice_player(voice: &VoiceRecording, t: &AppTheme, cx: &mut Contex
                 .child(format!("00:00:{:02}", voice.current_seconds)),
         )
         .child(
-            div()
-                .flex_1()
-                .mx_4()
-                .h(px(2.0))
-                .bg(t.ink)
-                .relative()
-                .child(
-                    div()
-                        .absolute()
-                        .left(px(40.0))
-                        .top(px(-3.0))
-                        .w(px(8.0))
-                        .h(px(8.0))
-                        .rounded_full()
-                        .bg(t.ink),
-                ),
+            div().flex_1().mx_4().h(px(2.0)).bg(t.ink).relative().child(
+                div()
+                    .absolute()
+                    .left(px(40.0))
+                    .top(px(-3.0))
+                    .w(px(8.0))
+                    .h(px(8.0))
+                    .rounded_full()
+                    .bg(t.ink),
+            ),
         )
         .child(
             div()

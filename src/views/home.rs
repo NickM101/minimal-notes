@@ -1,8 +1,11 @@
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
-use gpui_kit::component::{button::{Button, ButtonVariants}, IconName};
 use crate::theme::CurrentScreen;
 use crate::NotesApp;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{
+    button::{Button, ButtonVariants},
+    IconName,
+};
+use gpui_kit::*;
 
 impl NotesApp {
     pub(crate) fn render_home(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -94,7 +97,6 @@ impl NotesApp {
                             ),
                     ),
             )
-
             // Bottom Bar: Browse Notes docked at bottom left, Sign In / Profile docked at bottom right
             .child(
                 div()
@@ -120,10 +122,5 @@ impl NotesApp {
                     )
                     .child(self.render_avatar_button(&t, cx)),
             )
-
-
-
     }
-
-
 }

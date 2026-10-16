@@ -1,8 +1,11 @@
-use gpui_kit::base::StyledExt;
-use gpui_kit::*;
-use gpui_kit::component::{button::{Button, ButtonVariants}, IconName, Sizable};
 use crate::theme::AppTheme;
 use crate::NotesApp;
+use gpui_kit::base::StyledExt;
+use gpui_kit::component::{
+    button::{Button, ButtonVariants},
+    IconName, Sizable,
+};
+use gpui_kit::*;
 
 pub fn render_attach_modal(
     _this: &NotesApp,
